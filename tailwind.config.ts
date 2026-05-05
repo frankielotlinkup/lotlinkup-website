@@ -9,8 +9,26 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        ink: {
+          DEFAULT: "var(--color-ink)",
+          charcoal: "var(--color-ink-charcoal)",
+          soft: "var(--color-ink-soft)",
+        },
+        accent: {
+          DEFAULT: "var(--color-accent)",
+          deep: "var(--color-accent-deep)",
+        },
+        paper: {
+          DEFAULT: "var(--color-paper)",
+          warm: "var(--color-paper-warm)",
+          edge: "var(--color-paper-edge)",
+        },
+        muted: "var(--color-muted)",
+      },
+      fontFamily: {
+        serif: ["var(--font-fraunces)", "Georgia", "serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "monospace"],
       },
     },
   },
