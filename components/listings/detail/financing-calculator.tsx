@@ -2,8 +2,15 @@
 
 import { useMemo, useState } from "react";
 
-const TERMS = [24, 36, 48, 60] as const;
-type Term = (typeof TERMS)[number];
+const FALLBACK_TERMS: number[] = [24, 36, 48, 60];
+
+function parseTerms(raw: string | null | undefined): number[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+}
 
 function fmtUSD(n: number, decimals = 0): string {
   return n.toLocaleString("en-US", {
@@ -44,19 +51,23 @@ export function FinancingCalculator({
   minDownPayment,
   defaultTermMonths,
   annualRate,
+  availableTerms,
 }: {
   cashPrice: number;
   minDownPayment: number;
   defaultTermMonths: number;
   annualRate: number;
+  availableTerms: string | null;
 }) {
   const sliderMax = Math.max(minDownPayment, Math.round(cashPrice * 0.7));
-  const initialTerm = (TERMS as readonly number[]).includes(defaultTermMonths)
-    ? (defaultTermMonths as Term)
-    : 60;
+  const parsed = parseTerms(availableTerms);
+  const terms = parsed.length > 0 ? parsed : FALLBACK_TERMS;
+  const initialTerm = terms.includes(defaultTermMonths)
+    ? defaultTermMonths
+    : terms[0];
 
   const [downPayment, setDownPayment] = useState(minDownPayment);
-  const [term, setTerm] = useState<Term>(initialTerm);
+  const [term, setTerm] = useState<number>(initialTerm);
 
   const monthly = useMemo(
     () =>
@@ -112,8 +123,13 @@ export function FinancingCalculator({
 
           <div className="mt-8">
             <p className="type-caption text-muted">Term</p>
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {TERMS.map((t) => {
+            <div
+              className="mt-3 grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${terms.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {terms.map((t) => {
                 const active = t === term;
                 return (
                   <button

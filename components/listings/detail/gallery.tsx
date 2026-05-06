@@ -183,20 +183,31 @@ export function Gallery({ slides, badge }: GalleryProps) {
           role="dialog"
           aria-modal="true"
           aria-label="Photo gallery"
-          className="fixed inset-0 z-50 flex flex-col bg-ink/95"
+          className="fixed inset-0 z-50"
         >
+          {/* Backdrop — click to close */}
           <button
             type="button"
-            onClick={() => setLightboxOpen(false)}
             aria-label="Close gallery"
-            className="absolute inset-0"
+            onClick={() => setLightboxOpen(false)}
             tabIndex={-1}
+            className="absolute inset-0 bg-ink/95 cursor-default"
           />
+
+          {/* Image — pointer-events:none on wrapper so backdrop clicks pass through;
+              auto on the image so clicks on the photo itself don't close. */}
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4 py-20 md:px-20">
+            <div className="pointer-events-auto relative aspect-[16/9] w-full max-w-5xl overflow-hidden rounded-md bg-ink-charcoal">
+              <Slide src={slides[lightboxIndex] ?? ""} />
+            </div>
+          </div>
+
+          {/* Close X */}
           <button
             type="button"
             onClick={() => setLightboxOpen(false)}
             aria-label="Close"
-            className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-md text-paper hover:bg-white/10 transition-colors"
+            className="absolute right-4 top-4 z-20 inline-flex h-12 w-12 items-center justify-center rounded-md bg-black/30 text-paper transition-colors hover:bg-black/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
           >
             <svg
               viewBox="0 0 24 24"
@@ -213,14 +224,9 @@ export function Gallery({ slides, badge }: GalleryProps) {
             </svg>
           </button>
 
-          <div className="relative z-0 flex flex-1 items-center justify-center p-6">
-            <div className="relative aspect-[16/9] w-full max-w-5xl overflow-hidden rounded-md bg-ink-charcoal">
-              <Slide src={slides[lightboxIndex] ?? ""} />
-            </div>
-          </div>
-
           {slides.length > 1 && (
-            <div className="z-10 flex items-center justify-between gap-4 px-6 pb-6">
+            <>
+              {/* Prev */}
               <button
                 type="button"
                 onClick={() =>
@@ -229,7 +235,7 @@ export function Gallery({ slides, badge }: GalleryProps) {
                   )
                 }
                 aria-label="Previous photo"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-paper hover:bg-white/10 transition-colors"
+                className="absolute left-3 top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-md bg-black/30 text-paper transition-colors hover:bg-black/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -245,16 +251,15 @@ export function Gallery({ slides, badge }: GalleryProps) {
                   <polyline points="15 6 9 12 15 18" />
                 </svg>
               </button>
-              <p className="font-mono text-sm text-paper/80">
-                {lightboxIndex + 1} of {slides.length}
-              </p>
+
+              {/* Next */}
               <button
                 type="button"
                 onClick={() =>
                   setLightboxIndex((i) => (i + 1) % slides.length)
                 }
                 aria-label="Next photo"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-paper hover:bg-white/10 transition-colors"
+                className="absolute right-3 top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-md bg-black/30 text-paper transition-colors hover:bg-black/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -270,7 +275,15 @@ export function Gallery({ slides, badge }: GalleryProps) {
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
               </button>
-            </div>
+
+              {/* Counter */}
+              <p
+                aria-live="polite"
+                className="pointer-events-none absolute inset-x-0 bottom-6 z-20 text-center font-mono text-sm text-paper/80"
+              >
+                {lightboxIndex + 1} of {slides.length}
+              </p>
+            </>
           )}
         </div>
       )}

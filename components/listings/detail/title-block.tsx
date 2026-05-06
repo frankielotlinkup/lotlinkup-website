@@ -44,6 +44,7 @@ export function TitleBlock({
     : listing.latitude != null && listing.longitude != null
       ? `https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}`
       : "#location";
+  const directionsIsExternal = directionsHref.startsWith("http");
 
   return (
     <section className="bg-paper">
@@ -122,7 +123,7 @@ export function TitleBlock({
             </a>
             <a
               href={directionsHref}
-              {...(listing.google_maps_url
+              {...(directionsIsExternal
                 ? { target: "_blank", rel: "noopener noreferrer" }
                 : {})}
               className="mt-3 block w-full rounded-md border border-ink px-4 py-3 text-center text-sm font-medium text-ink transition-colors hover:bg-ink hover:text-paper"

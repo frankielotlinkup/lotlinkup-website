@@ -39,6 +39,7 @@ const NULL_LISTING: Omit<PublicListing, "id"> = {
   gallery: null,
   date_listed: null,
   apn: null,
+  available_terms: null,
 };
 
 const PLACEHOLDER_GALLERY = [
@@ -66,6 +67,7 @@ export const DEMO_LISTINGS: PublicListing[] = [
     monthly_payment: 389,
     term_months: 60,
     interest_rate: 9.9,
+    available_terms: "24,36,48,60",
     road_access: "Paved county road",
     utilities: "Power and water at the road",
     topography: "Gently rolling, partially wooded",
@@ -97,6 +99,7 @@ export const DEMO_LISTINGS: PublicListing[] = [
     monthly_payment: 325,
     term_months: 60,
     interest_rate: 9.9,
+    available_terms: "36,48,60",
     road_access: "Gravel county road, year-round access",
     utilities: "Power at the road; well or community water options nearby",
     topography: "Flat with mature oaks along the back edge",

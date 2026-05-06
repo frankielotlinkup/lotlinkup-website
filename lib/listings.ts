@@ -30,6 +30,7 @@ export type PublicListing = {
   gallery: string[] | null;
   date_listed: string | null;
   apn: string | null;
+  available_terms: string | null;
 };
 
 const PUBLIC_COLUMNS = [
@@ -61,6 +62,7 @@ const PUBLIC_COLUMNS = [
   "gallery",
   "date_listed",
   "apn",
+  "available_terms",
 ].join(",");
 
 export async function getPublishedListings(): Promise<PublicListing[]> {

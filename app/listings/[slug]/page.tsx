@@ -108,6 +108,7 @@ export default async function ListingDetailPage({
               minDownPayment={listing.down_payment ?? 0}
               defaultTermMonths={listing.term_months ?? 60}
               annualRate={listing.interest_rate ?? 0}
+              availableTerms={listing.available_terms}
             />
           </div>
         )}

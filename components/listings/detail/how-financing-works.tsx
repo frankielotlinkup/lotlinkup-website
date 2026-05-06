@@ -2,16 +2,16 @@ import Link from "next/link";
 
 const STEPS = [
   {
-    title: "1. We close fast",
-    body: "No banks, no underwriting drama. Most closings take a week or less.",
+    title: "We close fast",
+    body: "Around 3 weeks or less. No banks, no underwriting drama.",
   },
   {
-    title: "2. You make monthly payments",
-    body: "Pay online or by check, on a schedule that works for you.",
+    title: "The land is yours from day one",
+    body: "Warranty deed transfers to you when your down payment is made. You own the land while you pay it off.",
   },
   {
-    title: "3. The land is yours",
-    body: "Once you've paid in full, we transfer clear title via warranty deed.",
+    title: "Make monthly payments",
+    body: "Pay online or by check, on a schedule that works for you. Once paid in full, you're free and clear.",
   },
 ];
 
