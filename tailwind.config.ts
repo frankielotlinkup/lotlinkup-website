@@ -26,7 +26,7 @@ const config: Config = {
         muted: "var(--color-muted)",
       },
       fontFamily: {
-        serif: ["var(--font-fraunces)", "Georgia", "serif"],
+        serif: ['var(--font-libre-caslon-text)', 'Caslon', 'Georgia', 'serif'],
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
         mono: ["var(--font-jetbrains-mono)", "ui-monospace", "monospace"],
       },

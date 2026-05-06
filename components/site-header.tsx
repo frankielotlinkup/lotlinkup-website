@@ -39,8 +39,21 @@ export function SiteHeader() {
   }, [menuOpen]);
 
   const wrapperClass = overlayDark
-    ? "bg-transparent text-white"
-    : "bg-white text-ink border-b border-paper-edge";
+    ? "bg-transparent"
+    : "bg-white border-b border-paper-edge";
+
+  const logoColor = overlayDark
+    ? "text-paper hover:text-accent"
+    : "text-accent hover:text-accent-deep";
+
+  const navLinkColor = (active: boolean) => {
+    if (overlayDark) {
+      return active ? "text-accent" : "text-paper hover:text-accent";
+    }
+    return active ? "text-accent" : "text-ink hover:text-accent";
+  };
+
+  const menuButtonColor = overlayDark ? "text-paper" : "text-ink";
 
   return (
     <>
@@ -50,7 +63,7 @@ export function SiteHeader() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-8">
           <Link
             href="/"
-            className="font-serif text-2xl font-medium tracking-tight text-accent hover:text-accent-deep transition-colors"
+            className={`font-serif text-2xl font-normal tracking-[-0.01em] transition-colors ${logoColor}`}
             aria-label="Lot Linkup home"
           >
             Lot Linkup
@@ -65,9 +78,7 @@ export function SiteHeader() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`type-small font-medium transition-colors hover:text-accent ${
-                    active ? "text-accent" : ""
-                  }`}
+                  className={`type-small font-medium transition-colors ${navLinkColor(active)}`}
                   aria-current={active ? "page" : undefined}
                 >
                   {l.label}
@@ -81,7 +92,7 @@ export function SiteHeader() {
             aria-controls="mobile-menu"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((v) => !v)}
-            className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-black/5 transition-colors"
+            className={`md:hidden inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-black/5 ${menuButtonColor}`}
           >
             <svg
               viewBox="0 0 24 24"
@@ -112,7 +123,7 @@ export function SiteHeader() {
           <div className="flex h-16 items-center justify-between px-6 border-b border-paper-edge">
             <Link
               href="/"
-              className="font-serif text-2xl font-medium tracking-tight text-accent"
+              className="font-serif text-2xl font-normal tracking-[-0.01em] text-accent"
               onClick={() => setMenuOpen(false)}
             >
               Lot Linkup
@@ -121,7 +132,7 @@ export function SiteHeader() {
               type="button"
               aria-label="Close menu"
               onClick={() => setMenuOpen(false)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-black/5 transition-colors"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink hover:bg-black/5 transition-colors"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -148,7 +159,7 @@ export function SiteHeader() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`font-serif text-3xl ${
+                  className={`font-serif text-3xl font-normal ${
                     active ? "text-accent" : "text-ink"
                   }`}
                   aria-current={active ? "page" : undefined}

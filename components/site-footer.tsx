@@ -8,7 +8,7 @@ export function SiteFooter() {
       <Container>
         <div className="grid gap-12 py-16 md:grid-cols-3 md:gap-8 lg:py-20">
           <div>
-            <p className="font-serif text-2xl font-medium text-accent">
+            <p className="font-serif text-2xl font-normal tracking-[-0.01em] text-accent">
               Lot Linkup
             </p>
             <p className="type-body text-ink-soft mt-3 max-w-xs">
