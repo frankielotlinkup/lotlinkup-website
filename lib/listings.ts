@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "./supabase";
+import { DEMO_LISTINGS } from "./demo-data";
 
 export type PublicListing = {
   id: string;
@@ -72,5 +73,11 @@ export async function getPublishedListings(): Promise<PublicListing[]> {
     throw new Error(`Failed to fetch published listings: ${error.message}`);
   }
 
-  return (data ?? []) as unknown as PublicListing[];
+  const real = (data ?? []) as unknown as PublicListing[];
+
+  if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
+    return [...real, ...DEMO_LISTINGS];
+  }
+
+  return real;
 }
