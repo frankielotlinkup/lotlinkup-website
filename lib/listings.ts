@@ -29,6 +29,7 @@ export type PublicListing = {
   main_image: string | null;
   gallery: string[] | null;
   date_listed: string | null;
+  apn: string | null;
 };
 
 const PUBLIC_COLUMNS = [
@@ -59,6 +60,7 @@ const PUBLIC_COLUMNS = [
   "main_image",
   "gallery",
   "date_listed",
+  "apn",
 ].join(",");
 
 export async function getPublishedListings(): Promise<PublicListing[]> {
@@ -80,4 +82,29 @@ export async function getPublishedListings(): Promise<PublicListing[]> {
   }
 
   return real;
+}
+
+export async function getListingBySlug(
+  slug: string,
+): Promise<PublicListing | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("inventory")
+    .select(PUBLIC_COLUMNS)
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch listing by slug: ${error.message}`);
+  }
+
+  if (data) return data as unknown as PublicListing;
+
+  if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
+    const demo = DEMO_LISTINGS.find((l) => l.slug === slug);
+    if (demo) return demo;
+  }
+
+  return null;
 }
