@@ -34,22 +34,34 @@ export function SectionTitle({
 
   return (
     <div className={wrapperClass}>
-      <div
-        aria-hidden="true"
-        className={`h-0.5 w-[60px] bg-accent ${isCenter ? "mx-auto" : ""}`}
-      />
-      {eyebrow && (
-        <p
-          className={`mt-5 text-[13px] font-medium uppercase tracking-[0.12em] ${eyebrowColor}`}
+      {/* Accent line — inline with the eyebrow when present, otherwise on its own */}
+      {eyebrow ? (
+        <div
+          className={`flex items-center gap-3.5 ${isCenter ? "justify-center" : ""}`}
         >
-          {eyebrow}
-        </p>
+          <span
+            aria-hidden="true"
+            className="h-[1.5px] w-9 bg-accent"
+          />
+          <p
+            className={`text-[13px] font-medium uppercase tracking-[0.12em] ${eyebrowColor}`}
+          >
+            {eyebrow}
+          </p>
+        </div>
+      ) : (
+        <span
+          aria-hidden="true"
+          className={`block h-[1.5px] w-9 bg-accent ${isCenter ? "mx-auto" : ""}`}
+        />
       )}
+
       <h2
-        className={`${eyebrow ? "mt-4" : "mt-5"} font-serif text-[32px] font-bold leading-[1.05] tracking-[-0.01em] ${headlineColor} md:text-[44px]`}
+        className={`mt-4 font-serif text-[32px] font-bold leading-[1.05] tracking-[-0.01em] ${headlineColor} md:text-[44px]`}
       >
         {headline}
       </h2>
+
       {subhead && (
         <p
           className={`mt-3.5 max-w-[600px] text-base leading-[1.55] ${subheadColor} ${isCenter ? "mx-auto" : ""} md:text-[17px]`}

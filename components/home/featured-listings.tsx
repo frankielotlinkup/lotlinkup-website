@@ -22,7 +22,7 @@ export function FeaturedListings({
               A look at our newest listings &mdash; financed and outright.{" "}
               <Link
                 href="/land-for-sale"
-                className="text-accent underline underline-offset-2 transition-colors hover:text-accent-deep"
+                className="whitespace-nowrap text-accent underline underline-offset-2 transition-colors hover:text-accent-deep"
               >
                 See all available lots →
               </Link>

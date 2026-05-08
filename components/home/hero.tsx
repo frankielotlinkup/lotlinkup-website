@@ -35,13 +35,13 @@ export function Hero() {
       {/* Content — bottom-aligned with bottom padding */}
       <div className="relative z-10 pb-20 md:pb-24">
         <Container>
-          <p className="type-caption text-paper-warm/85 text-shadow-hero">
+          <p className="type-caption text-shadow-hero text-white/95">
             RURAL LAND, NATIONWIDE
           </p>
-          <h1 className="text-shadow-hero mt-4 max-w-[720px] font-serif text-[44px] font-bold leading-[1.05] tracking-[-0.01em] text-paper md:text-[64px]">
+          <h1 className="text-shadow-hero mt-4 max-w-[720px] font-serif text-[44px] font-bold leading-[1.05] tracking-[-0.01em] text-white md:text-[64px]">
             Rural land, made accessible.
           </h1>
-          <p className="text-shadow-hero mt-5 max-w-[580px] text-base leading-[1.55] text-paper/90 md:text-[18px]">
+          <p className="text-shadow-hero mt-5 max-w-[580px] text-base leading-[1.55] text-white/[0.92] md:text-[18px]">
             We buy raw land in good country and sell it direct &mdash; with
             seller financing built in. No banks, no realtors, no nonsense.
           </p>
