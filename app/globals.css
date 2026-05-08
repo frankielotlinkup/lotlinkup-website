@@ -33,6 +33,22 @@
   }
 }
 
+/* Mapbox popup overrides — match our paper-edge card styling */
+.mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--color-paper-edge);
+  box-shadow: 0 6px 24px rgba(15, 27, 42, 0.12);
+  background: white;
+}
+.mapboxgl-popup-tip {
+  border-top-color: white !important;
+  border-bottom-color: white !important;
+}
+.mapboxgl-popup-close-button {
+  display: none !important;
+}
+
 @layer components {
   .type-display {
     @apply font-serif text-[48px] leading-[1.05] tracking-[-0.01em] font-normal lg:text-[64px] lg:leading-[1];
