@@ -1,4 +1,5 @@
 import { Container } from "@/components/container";
+import { SectionTitle } from "@/components/section-title";
 
 const ICON_PROPS = {
   width: 28,
@@ -61,12 +62,12 @@ export function ValueProps() {
   return (
     <section className="bg-paper py-16 md:py-24">
       <Container>
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="type-caption text-accent mb-4">WHY LOT LINKUP</p>
-          <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em] text-ink md:text-[40px]">
-            Why buy land from us.
-          </h2>
-        </div>
+        <SectionTitle
+          eyebrow="WHY LOT LINKUP"
+          headline="Why buy land from us."
+          align="center"
+          variant="light"
+        />
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:mt-16 md:grid-cols-3 md:gap-12">
           {BLOCKS.map(({ Icon, title, body }) => (

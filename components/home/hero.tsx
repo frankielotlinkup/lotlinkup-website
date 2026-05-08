@@ -14,22 +14,34 @@ export function Hero() {
         sizes="100vw"
         className="object-cover object-center"
       />
-      {/* Dark gradient overlay */}
+
+      {/* Subtle full-image gradient — reduced ~30% from original */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-black/15 to-black/45"
+        className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30"
+      />
+
+      {/* Soft radial spotlight behind the text block — bottom-left,
+          fades smoothly so it reads as a vignette, not a rectangle. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 55% at 30% 72%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.30) 35%, rgba(0,0,0,0) 80%)",
+        }}
       />
 
       {/* Content — bottom-aligned with bottom padding */}
       <div className="relative z-10 pb-20 md:pb-24">
         <Container>
-          <p className="type-caption text-paper-warm/85">
+          <p className="type-caption text-paper-warm/85 text-shadow-hero">
             RURAL LAND, NATIONWIDE
           </p>
-          <h1 className="mt-4 max-w-[720px] font-serif text-[44px] font-bold leading-[1.05] tracking-[-0.01em] text-paper md:text-[64px]">
+          <h1 className="text-shadow-hero mt-4 max-w-[720px] font-serif text-[44px] font-bold leading-[1.05] tracking-[-0.01em] text-paper md:text-[64px]">
             Rural land, made accessible.
           </h1>
-          <p className="mt-5 max-w-[580px] text-base leading-[1.55] text-paper/90 md:text-[18px]">
+          <p className="text-shadow-hero mt-5 max-w-[580px] text-base leading-[1.55] text-paper/90 md:text-[18px]">
             We buy raw land in good country and sell it direct &mdash; with
             seller financing built in. No banks, no realtors, no nonsense.
           </p>

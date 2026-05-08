@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/container";
+import { SectionTitle } from "@/components/section-title";
 import { ListingCard } from "@/components/listings/listing-card";
 import type { PublicListing } from "@/lib/listings";
 
@@ -13,21 +14,23 @@ export function FeaturedListings({
   return (
     <section className="bg-paper-warm py-16 md:py-24">
       <Container>
-        <div className="max-w-2xl">
-          <p className="type-caption text-accent mb-4">NEWEST LISTINGS</p>
-          <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em] text-ink md:text-[40px]">
-            Lots ready to move on.
-          </h2>
-          <p className="mt-4 text-[17px] leading-[1.55] text-ink-soft">
-            A look at our newest listings &mdash; financed and outright.{" "}
-            <Link
-              href="/land-for-sale"
-              className="text-accent underline underline-offset-2 transition-colors hover:text-accent-deep"
-            >
-              See all available lots →
-            </Link>
-          </p>
-        </div>
+        <SectionTitle
+          eyebrow="NEWEST LISTINGS"
+          headline="Lots ready to move on."
+          subhead={
+            <>
+              A look at our newest listings &mdash; financed and outright.{" "}
+              <Link
+                href="/land-for-sale"
+                className="text-accent underline underline-offset-2 transition-colors hover:text-accent-deep"
+              >
+                See all available lots →
+              </Link>
+            </>
+          }
+          align="left"
+          variant="light"
+        />
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-8 lg:gap-10">
           {listings.map((l) => (

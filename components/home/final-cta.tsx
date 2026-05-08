@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SectionTitle } from "@/components/section-title";
 
 function formatPhoneDisplay(raw: string): string {
   const digits = raw.replace(/[^0-9]/g, "");
@@ -17,13 +18,17 @@ export function HomeFinalCta({ phone }: { phone: string | null }) {
   return (
     <section className="bg-ink text-paper">
       <div className="mx-auto max-w-3xl px-6 py-14 text-center sm:px-8 md:py-20">
-        <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em] text-paper md:text-[40px]">
-          Find your land. Make it yours.
-        </h2>
-        <p className="mt-4 text-base leading-[1.55] text-paper-warm/85 md:text-[17px]">
-          Browse our active inventory or reach out &mdash; we&apos;re a phone
-          call away.
-        </p>
+        <SectionTitle
+          headline="Find your land. Make it yours."
+          subhead={
+            <>
+              Browse our active inventory or reach out &mdash; we&apos;re a
+              phone call away.
+            </>
+          }
+          align="center"
+          variant="dark"
+        />
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/land-for-sale"

@@ -53,6 +53,8 @@ export function SiteHeader() {
     return active ? "text-accent" : "text-ink hover:text-accent";
   };
 
+  const navLinkSize = overlayDark ? "text-[15px]" : "text-sm";
+  const navTextShadow = overlayDark ? "text-shadow-nav" : "";
   const menuButtonColor = overlayDark ? "text-paper" : "text-ink";
 
   return (
@@ -63,7 +65,7 @@ export function SiteHeader() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-8">
           <Link
             href="/"
-            className={`font-serif text-2xl font-normal tracking-[-0.01em] transition-colors ${logoColor}`}
+            className={`font-serif text-2xl font-normal tracking-[-0.01em] transition-colors ${logoColor} ${navTextShadow}`}
             aria-label="Lot Linkup home"
           >
             Lot Linkup
@@ -78,7 +80,7 @@ export function SiteHeader() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`type-small font-medium transition-colors ${navLinkColor(active)}`}
+                  className={`${navLinkSize} font-medium leading-[1.5] transition-colors ${navLinkColor(active)} ${navTextShadow}`}
                   aria-current={active ? "page" : undefined}
                 >
                   {l.label}

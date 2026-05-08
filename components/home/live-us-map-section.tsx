@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/container";
+import { SectionTitle } from "@/components/section-title";
 import type { PublicListing } from "@/lib/listings";
 import { LiveUsMap, type Pin } from "./live-us-map";
 
@@ -32,16 +33,18 @@ export function LiveUsMapSection({
   return (
     <section className="bg-paper py-16 md:py-24">
       <Container>
-        <div className="max-w-2xl">
-          <p className="type-caption text-accent mb-4">OUR INVENTORY</p>
-          <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em] text-ink md:text-[40px]">
-            Land all across the country.
-          </h2>
-          <p className="mt-4 text-[17px] leading-[1.55] text-ink-soft">
-            Click a pin to see the lot. Every property listed, every state
-            we&apos;re in, on one map.
-          </p>
-        </div>
+        <SectionTitle
+          eyebrow="OUR INVENTORY"
+          headline="Land all across the country."
+          subhead={
+            <>
+              Click a pin to see the lot. Every property listed, every state
+              we&apos;re in, on one map.
+            </>
+          }
+          align="left"
+          variant="light"
+        />
 
         <div className="mt-10 overflow-hidden rounded-md border border-paper-edge">
           {!token ? (

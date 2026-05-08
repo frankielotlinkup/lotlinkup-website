@@ -49,6 +49,15 @@
   display: none !important;
 }
 
+@layer utilities {
+  .text-shadow-hero {
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  }
+  .text-shadow-nav {
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  }
+}
+
 @layer components {
   .type-display {
     @apply font-serif text-[48px] leading-[1.05] tracking-[-0.01em] font-normal lg:text-[64px] lg:leading-[1];
