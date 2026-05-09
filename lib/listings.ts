@@ -1,6 +1,24 @@
 import { getSupabaseClient } from "./supabase";
 import { DEMO_LISTINGS } from "./demo-data";
 
+// PostgREST serializes Postgres `numeric` columns as strings to preserve
+// precision. Our PublicListing type says `latitude: number | null`, but at
+// runtime the values arrive as `"33.824730"`. Coerce explicitly so consumers
+// can rely on the typed contract — strings parse, NaN/missing fall to null.
+function toNumberOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeListing(row: PublicListing): PublicListing {
+  return {
+    ...row,
+    latitude: toNumberOrNull(row.latitude),
+    longitude: toNumberOrNull(row.longitude),
+  };
+}
+
 export type PublicListing = {
   id: string;
   slug: string | null;
@@ -77,7 +95,9 @@ export async function getPublishedListings(): Promise<PublicListing[]> {
     throw new Error(`Failed to fetch published listings: ${error.message}`);
   }
 
-  const real = (data ?? []) as unknown as PublicListing[];
+  const real = ((data ?? []) as unknown as PublicListing[]).map(
+    normalizeListing,
+  );
 
   if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
     return [...real, ...DEMO_LISTINGS];
@@ -101,7 +121,7 @@ export async function getListingBySlug(
     throw new Error(`Failed to fetch listing by slug: ${error.message}`);
   }
 
-  if (data) return data as unknown as PublicListing;
+  if (data) return normalizeListing(data as unknown as PublicListing);
 
   if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
     const demo = DEMO_LISTINGS.find((l) => l.slug === slug);
