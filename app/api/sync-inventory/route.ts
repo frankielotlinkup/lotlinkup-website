@@ -136,6 +136,42 @@ export async function POST(req: Request) {
   return NextResponse.json(report);
 }
 
+// ---------- maps URL → coordinates ----------
+// Resolves a Google Maps URL (including maps.app.goo.gl shortlinks) and
+// extracts lat/lng. Returns null on any failure rather than throwing — the
+// sync should still upsert the row even when geocoding misses.
+async function extractCoordsFromMapsUrl(
+  url: string,
+): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    const response = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    const finalUrl = response.url;
+
+    // 1. /maps/...@lat,lng,zoom — most common after a maps.app.goo.gl
+    //    shortlink resolves to a /maps/place URL
+    let m = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
+
+    // 2. ?q=lat,lng or &q=lat,lng — legacy maps query API
+    m = finalUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
+
+    // 3. ?query=lat,lng — newer maps query API
+    m = finalUrl.match(/[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
+
+    // 4. !3d<lat>!4d<lng> — embedded in the /maps data parameter,
+    //    sometimes the only place coords appear when the URL points
+    //    at a labeled place rather than raw coordinates
+    m = finalUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------- per-property sync ----------
 async function syncPropertyFolder(
   drive: drive_v3.Drive,
@@ -171,7 +207,12 @@ async function syncPropertyFolder(
     .filter((m) => m.url !== heroUrl)
     .map((m) => m.url);
 
-  // 4. Build row
+  // 4. Geocode the maps link, if present
+  const coords = parsed.google_maps_url
+    ? await extractCoordsFromMapsUrl(parsed.google_maps_url)
+    : null;
+
+  // 5. Build row
   const publishedFlags = stateToFlags(stateName);
   const row = {
     slug,
@@ -183,6 +224,8 @@ async function syncPropertyFolder(
     acreage: parsed.acreage,
     apn: parsed.apn,
     google_maps_url: parsed.google_maps_url,
+    latitude: coords?.latitude ?? null,
+    longitude: coords?.longitude ?? null,
     cash_price: parsed.cash_price,
     asking_price: parsed.cash_price, // mirror unless explicitly different
     financing_available: parsed.financing_available ?? false,
@@ -208,7 +251,7 @@ async function syncPropertyFolder(
     updated_at: new Date().toISOString(),
   };
 
-  // 5. Upsert. Try APN match first — CRM rows pre-exist with APNs but no slug.
+  // 6. Upsert. Try APN match first — CRM rows pre-exist with APNs but no slug.
   // Fall back to slug match for rows the sync itself created previously.
   let existing: { id: string } | null = null;
   if (parsed.apn) {

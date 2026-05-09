@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { formatPhoneDisplay, formatPhoneHref } from "@/lib/format";
 
 const inputClass =
   "block w-full rounded-md border border-paper-edge bg-white px-3 py-2 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30";
@@ -39,10 +40,10 @@ export function LeadForm({
             {" "}
             Or call/text us directly at{" "}
             <a
-              href={`tel:${phone.replace(/[^+0-9]/g, "")}`}
+              href={formatPhoneHref(phone)}
               className="text-accent underline underline-offset-2 transition-colors hover:text-accent-deep"
             >
-              {phone}
+              {formatPhoneDisplay(phone)}
             </a>
             .
           </>

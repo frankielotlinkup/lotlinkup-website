@@ -1,22 +1,8 @@
 import type { PublicListing } from "@/lib/listings";
+import { formatPhoneDisplay, formatPhoneHref } from "@/lib/format";
 
 function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
-}
-
-function formatPhoneHref(raw: string): string {
-  return `tel:${raw.replace(/[^+0-9]/g, "")}`;
-}
-
-function formatPhoneDisplay(raw: string): string {
-  const digits = raw.replace(/[^0-9]/g, "");
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
-  }
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-  return raw;
 }
 
 export function TitleBlock({

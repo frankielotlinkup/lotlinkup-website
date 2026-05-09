@@ -1,3 +1,5 @@
+import { formatPhoneDisplay, formatPhoneHref } from "@/lib/format";
+
 export function FinalCtaStrip({ phone }: { phone: string | null }) {
   return (
     <section className="bg-ink text-paper">
@@ -18,10 +20,10 @@ export function FinalCtaStrip({ phone }: { phone: string | null }) {
           </a>
           {phone && (
             <a
-              href={`tel:${phone.replace(/[^+0-9]/g, "")}`}
+              href={formatPhoneHref(phone)}
               className="inline-block rounded-md border border-paper px-6 py-3 text-sm font-medium text-paper transition-colors hover:bg-paper hover:text-ink"
             >
-              Call/text {phone}
+              Call/text {formatPhoneDisplay(phone)}
             </a>
           )}
         </div>

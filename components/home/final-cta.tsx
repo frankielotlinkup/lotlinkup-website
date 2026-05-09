@@ -1,19 +1,9 @@
 import Link from "next/link";
 import { SectionTitle } from "@/components/section-title";
-
-function formatPhoneDisplay(raw: string): string {
-  const digits = raw.replace(/[^0-9]/g, "");
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
-  }
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-  return raw;
-}
+import { formatPhoneDisplay, formatPhoneHref } from "@/lib/format";
 
 export function HomeFinalCta({ phone }: { phone: string | null }) {
-  const telHref = phone ? `tel:${phone.replace(/[^+0-9]/g, "")}` : null;
+  const telHref = phone ? formatPhoneHref(phone) : null;
 
   return (
     <section className="bg-ink text-paper">
