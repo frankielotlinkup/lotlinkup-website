@@ -147,20 +147,25 @@ async function extractCoordsFromMapsUrl(
     const response = await fetch(url, { method: 'HEAD', redirect: 'follow' });
     const finalUrl = response.url;
 
-    // 1. /maps/...@lat,lng,zoom — most common after a maps.app.goo.gl
-    //    shortlink resolves to a /maps/place URL
+    // 1. /maps/...@lat,lng,zoom — appears in /maps/place URLs
     let m = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
 
-    // 2. ?q=lat,lng or &q=lat,lng — legacy maps query API
+    // 2. /maps/search/<lat>,<lng> — what maps.app.goo.gl shortlinks
+    //    redirect to in 2026. The "+" between the comma and the lng is
+    //    a URL-encoded space, e.g. /maps/search/33.824,+-87.242
+    m = finalUrl.match(/\/maps\/search\/(-?\d+\.\d+),\+?(-?\d+\.\d+)/);
+    if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
+
+    // 3. ?q=lat,lng or &q=lat,lng — legacy maps query API
     m = finalUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
 
-    // 3. ?query=lat,lng — newer maps query API
+    // 4. ?query=lat,lng — newer maps query API
     m = finalUrl.match(/[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (m) return { latitude: parseFloat(m[1]), longitude: parseFloat(m[2]) };
 
-    // 4. !3d<lat>!4d<lng> — embedded in the /maps data parameter,
+    // 5. !3d<lat>!4d<lng> — embedded in the /maps data parameter,
     //    sometimes the only place coords appear when the URL points
     //    at a labeled place rather than raw coordinates
     m = finalUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);

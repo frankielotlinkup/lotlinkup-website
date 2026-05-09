@@ -33,20 +33,12 @@ export default async function DebugPage() {
               No published listings yet.
             </p>
           ) : (
-            <ul className="mt-4 space-y-3 font-mono text-sm text-ink">
+            <ul className="mt-4 space-y-2 font-mono text-sm text-ink">
               {listings.map((l) => (
                 <li key={l.id}>
                   {l.city ?? "—"}, {l.state_code ?? "—"} ·{" "}
                   {l.acreage ?? "—"} ac · {l.slug ?? "—"} ·{" "}
                   {formatPrice(l.cash_price)}
-                  <details className="mt-1.5">
-                    <summary className="cursor-pointer text-xs text-muted hover:text-ink">
-                      Raw row JSON
-                    </summary>
-                    <pre className="mt-2 overflow-x-auto rounded-md border border-paper-edge bg-white p-3 text-xs leading-relaxed">
-                      {JSON.stringify(l, null, 2)}
-                    </pre>
-                  </details>
                 </li>
               ))}
             </ul>
