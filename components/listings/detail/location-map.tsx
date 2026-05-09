@@ -16,7 +16,7 @@ export function LocationMap({
     <Map
       mapboxAccessToken={token}
       initialViewState={{ latitude: lat, longitude: lng, zoom: 11 }}
-      mapStyle="mapbox://styles/mapbox/light-v11"
+      mapStyle="mapbox://styles/mapbox/standard-satellite"
       dragRotate={false}
       pitchWithRotate={false}
       cooperativeGestures
