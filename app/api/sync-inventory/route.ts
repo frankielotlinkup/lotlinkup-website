@@ -208,12 +208,25 @@ async function syncPropertyFolder(
     updated_at: new Date().toISOString(),
   };
 
-  // 5. Upsert by slug
-  const { data: existing } = await supa
-    .from('inventory')
-    .select('id')
-    .eq('slug', slug)
-    .maybeSingle();
+  // 5. Upsert. Try APN match first — CRM rows pre-exist with APNs but no slug.
+  // Fall back to slug match for rows the sync itself created previously.
+  let existing: { id: string } | null = null;
+  if (parsed.apn) {
+    const { data } = await supa
+      .from('inventory')
+      .select('id')
+      .eq('apn', parsed.apn)
+      .maybeSingle();
+    existing = data;
+  }
+  if (!existing) {
+    const { data } = await supa
+      .from('inventory')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    existing = data;
+  }
 
   if (existing) {
     await supa.from('inventory').update(row).eq('id', existing.id);
