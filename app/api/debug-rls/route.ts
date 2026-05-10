@@ -191,5 +191,35 @@ export async function GET() {
     },
     bisect_groups: groupResults,
     demo_flag: process.env.NEXT_PUBLIC_LOTLINKUP_DEMO ?? null,
+    date_listed_per_row: await (async () => {
+      const r = await admin
+        .from("inventory")
+        .select("slug, date_listed")
+        .eq("published", true);
+      return r.data ?? r.error?.message ?? null;
+    })(),
+    full_with_order_alt_orderbycol: await (async () => {
+      // same full-cols select, but ORDER BY id (always non-null) instead of date_listed
+      const r = await anon
+        .from("inventory")
+        .select(PUBLIC_COLUMNS_FULL)
+        .eq("published", true)
+        .order("id", { ascending: false });
+      return {
+        count: r.data?.length ?? null,
+        error: r.error?.message ?? null,
+      };
+    })(),
+    full_with_order_nullsFirst_true: await (async () => {
+      const r = await anon
+        .from("inventory")
+        .select(PUBLIC_COLUMNS_FULL)
+        .eq("published", true)
+        .order("date_listed", { ascending: false, nullsFirst: true });
+      return {
+        count: r.data?.length ?? null,
+        error: r.error?.message ?? null,
+      };
+    })(),
   });
 }
