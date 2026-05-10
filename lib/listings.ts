@@ -1,10 +1,13 @@
-import { getSupabaseClient } from "./supabase";
 import { DEMO_LISTINGS } from "./demo-data";
 
-// PostgREST serializes Postgres `numeric` columns as strings to preserve
-// precision. Our PublicListing type says `latitude: number | null`, but at
-// runtime the values arrive as `"33.824730"`. Coerce explicitly so consumers
-// can rely on the typed contract — strings parse, NaN/missing fall to null.
+// We talk to PostgREST directly via fetch instead of going through the
+// supabase-js client. The client has bitten us multiple times with silent
+// row-drop bugs whose triggers depend on subtle data shapes (specific column
+// values, sort orders, filter operators). Raw fetch with the same URL params
+// returned correct results every time in our diagnostic probes, so it's
+// strictly more reliable for read paths. We pay one fetch per page render;
+// pages are `force-dynamic` anyway. RLS still enforces public-only reads.
+
 function toNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   const n = typeof v === "number" ? v : Number(v);
@@ -83,25 +86,41 @@ const PUBLIC_COLUMNS = [
   "available_terms",
 ].join(",");
 
-export async function getPublishedListings(): Promise<PublicListing[]> {
-  const supabase = getSupabaseClient();
-  // No `.order()` here — full PUBLIC_COLUMNS + `.order("date_listed", ...)`
-  // triggers a supabase-js silent-row-drop bug. Verified via /api/debug-rls:
-  // same query without order returns 6 rows; with order returns 5.
-  // `.range(0, 99)` and `.order("id")` also work as escape hatches.
-  // We sort in JS instead — fewer than 100 rows; cost is trivial.
-  const { data, error } = await supabase
-    .from("inventory")
-    .select(PUBLIC_COLUMNS)
-    .is("published", true);
-
-  if (error) {
-    throw new Error(`Failed to fetch published listings: ${error.message}`);
+function getEnv(): { url: string; anonKey: string } {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error(
+      "Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set.",
+    );
   }
+  return { url, anonKey };
+}
 
-  const real = ((data ?? []) as unknown as PublicListing[]).map(
-    normalizeListing,
-  );
+async function pgrstGet(path: string): Promise<unknown> {
+  const { url, anonKey } = getEnv();
+  const res = await fetch(`${url}/rest/v1/${path}`, {
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`PostgREST ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+export async function getPublishedListings(): Promise<PublicListing[]> {
+  const select = encodeURIComponent(PUBLIC_COLUMNS);
+  const rows = (await pgrstGet(
+    `inventory?select=${select}&published=is.true`,
+  )) as PublicListing[];
+
+  const real = rows.map(normalizeListing);
 
   real.sort((a, b) => {
     const ad = a.date_listed ?? "";
@@ -119,19 +138,13 @@ export async function getPublishedListings(): Promise<PublicListing[]> {
 export async function getListingBySlug(
   slug: string,
 ): Promise<PublicListing | null> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("inventory")
-    .select(PUBLIC_COLUMNS)
-    .eq("slug", slug)
-    .is("published", true)
-    .maybeSingle();
+  const select = encodeURIComponent(PUBLIC_COLUMNS);
+  const slugParam = encodeURIComponent(slug);
+  const rows = (await pgrstGet(
+    `inventory?select=${select}&slug=eq.${slugParam}&published=is.true&limit=1`,
+  )) as PublicListing[];
 
-  if (error) {
-    throw new Error(`Failed to fetch listing by slug: ${error.message}`);
-  }
-
-  if (data) return normalizeListing(data as unknown as PublicListing);
+  if (rows.length > 0) return normalizeListing(rows[0]);
 
   if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
     const demo = DEMO_LISTINGS.find((l) => l.slug === slug);
