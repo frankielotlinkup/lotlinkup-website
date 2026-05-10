@@ -221,5 +221,46 @@ export async function GET() {
         error: r.error?.message ?? null,
       };
     })(),
+    raw_fetch_full_with_order: await (async () => {
+      // bypass supabase-js — call PostgREST directly to rule out client-side bug
+      const u = `${url}/rest/v1/inventory?select=${encodeURIComponent(PUBLIC_COLUMNS_FULL)}&published=eq.true&order=${encodeURIComponent("date_listed.desc.nullslast")}`;
+      try {
+        const r = await fetch(u, {
+          headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+          cache: "no-store",
+        });
+        const text = await r.text();
+        let parsed: unknown = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = text;
+        }
+        return {
+          status: r.status,
+          contentLength: text.length,
+          isArray: Array.isArray(parsed),
+          count: Array.isArray(parsed) ? parsed.length : null,
+          slugs: Array.isArray(parsed)
+            ? (parsed as { slug: string | null }[]).map((p) => p.slug ?? "(null)")
+            : null,
+          firstChars: text.slice(0, 200),
+        };
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : String(e) };
+      }
+    })(),
+    full_with_order_with_explicit_limit: await (async () => {
+      const r = await anon
+        .from("inventory")
+        .select(PUBLIC_COLUMNS_FULL)
+        .eq("published", true)
+        .order("date_listed", { ascending: false, nullsFirst: false })
+        .range(0, 99);
+      return {
+        count: r.data?.length ?? null,
+        error: r.error?.message ?? null,
+      };
+    })(),
   });
 }
