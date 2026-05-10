@@ -100,53 +100,58 @@ export async function GET() {
     helperError = e instanceof Error ? e.message : String(e);
   }
 
-  // 5. Variants — isolate order clause vs col combination
-  const variants: { name: string; run: () => Promise<{ data: unknown[] | null; error: { message: string } | null }> }[] = [
-    {
-      name: "minimal_with_order",
-      run: () =>
-        anon
-          .from("inventory")
-          .select(minimalCols)
-          .eq("published", true)
-          .order("date_listed", { ascending: false, nullsFirst: false }),
-    },
-    {
-      name: "full_no_order",
-      run: () =>
-        anon.from("inventory").select(PUBLIC_COLUMNS_FULL).eq("published", true),
-    },
-    {
-      name: "full_no_order_no_filter",
-      run: () =>
-        admin.from("inventory").select(PUBLIC_COLUMNS_FULL),
-    },
-    {
-      name: "first_half",
-      run: () =>
-        anon
-          .from("inventory")
-          .select(
-            "id, slug, state, state_code, city, county, acreage, latitude, longitude, google_maps_url, cash_price, financing_available, down_payment, monthly_payment, term_months",
-          )
-          .eq("published", true),
-    },
-    {
-      name: "second_half",
-      run: () =>
-        anon
-          .from("inventory")
-          .select(
-            "id, slug, interest_rate, road_access, utilities, topography, nearest_recreation, nearest_town, best_use_cases, description, lead_hook, main_image, gallery, date_listed, apn, available_terms",
-          )
-          .eq("published", true),
-    },
-  ];
+  // 5. Variants — isolate order clause vs col combination. Inline each
+  // probe to avoid wrestling with Supabase's PostgrestFilterBuilder types.
+  const groupResults: Record<string, { count: number | null; error: string | null }> = {};
 
-  const groupResults: Record<string, unknown> = {};
-  for (const v of variants) {
-    const r = await v.run();
-    groupResults[v.name] = {
+  {
+    const r = await anon
+      .from("inventory")
+      .select(minimalCols)
+      .eq("published", true)
+      .order("date_listed", { ascending: false, nullsFirst: false });
+    groupResults.minimal_with_order = {
+      count: r.data?.length ?? null,
+      error: r.error?.message ?? null,
+    };
+  }
+  {
+    const r = await anon
+      .from("inventory")
+      .select(PUBLIC_COLUMNS_FULL)
+      .eq("published", true);
+    groupResults.full_no_order = {
+      count: r.data?.length ?? null,
+      error: r.error?.message ?? null,
+    };
+  }
+  {
+    const r = await admin.from("inventory").select(PUBLIC_COLUMNS_FULL);
+    groupResults.admin_full_no_filter = {
+      count: r.data?.length ?? null,
+      error: r.error?.message ?? null,
+    };
+  }
+  {
+    const r = await anon
+      .from("inventory")
+      .select(
+        "id, slug, state, state_code, city, county, acreage, latitude, longitude, google_maps_url, cash_price, financing_available, down_payment, monthly_payment, term_months",
+      )
+      .eq("published", true);
+    groupResults.first_half = {
+      count: r.data?.length ?? null,
+      error: r.error?.message ?? null,
+    };
+  }
+  {
+    const r = await anon
+      .from("inventory")
+      .select(
+        "id, slug, interest_rate, road_access, utilities, topography, nearest_recreation, nearest_town, best_use_cases, description, lead_hook, main_image, gallery, date_listed, apn, available_terms",
+      )
+      .eq("published", true);
+    groupResults.second_half = {
       count: r.data?.length ?? null,
       error: r.error?.message ?? null,
     };
