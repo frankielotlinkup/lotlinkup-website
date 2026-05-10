@@ -32,12 +32,11 @@ export async function GET() {
     auth: { persistSession: false },
   });
 
-  // Admin view (full row dump for ALL rows w/ drive_folder set)
+  // Admin view: ALL columns for ALL rows w/ drive_folder set, so we can
+  // diff the invisible-to-anon row vs the visible ones field-by-field
   const adminAll = await admin
     .from("inventory")
-    .select(
-      "id, slug, published, status, drive_folder, date_listed, apn, latitude, longitude, main_image",
-    )
+    .select("*")
     .not("drive_folder", "is", null);
 
   // Anon view of published (full PUBLIC_COLUMNS — what the helper uses now)
