@@ -85,17 +85,16 @@ const PUBLIC_COLUMNS = [
 
 export async function getPublishedListings(): Promise<PublicListing[]> {
   const supabase = getSupabaseClient();
-  // Note: NOT using `{ nullsFirst: false }` here. Combined with the full
-  // PUBLIC_COLUMNS select, that triggers a supabase-js client bug that
-  // silently drops rows from the response (verified via /api/debug-rls —
-  // raw HTTP fetch with same params returns all rows; supabase-js returns
-  // a subset). All real published rows have non-null date_listed (sync
-  // writes it), so the nulls-handling option was dead code. Default order
-  // semantics work fine here.
+  // Use `.is("published", true)` not `.eq("published", true)` — the latter
+  // hits a supabase-js client bug that silently drops rows (verified via
+  // /api/debug-rls: raw HTTP fetch with `published=eq.true` returns 5 rows;
+  // supabase-js `.eq("published", true)` returns 4, drops a specific row;
+  // `.is("published", true)` returns 5 like the raw fetch). RLS already
+  // enforces published=true for anon, so this filter is defense-in-depth.
   const { data, error } = await supabase
     .from("inventory")
     .select(PUBLIC_COLUMNS)
-    .eq("published", true)
+    .is("published", true)
     .order("date_listed", { ascending: false });
 
   if (error) {
@@ -121,7 +120,7 @@ export async function getListingBySlug(
     .from("inventory")
     .select(PUBLIC_COLUMNS)
     .eq("slug", slug)
-    .eq("published", true)
+    .is("published", true)
     .maybeSingle();
 
   if (error) {
