@@ -85,17 +85,15 @@ const PUBLIC_COLUMNS = [
 
 export async function getPublishedListings(): Promise<PublicListing[]> {
   const supabase = getSupabaseClient();
-  // Use `.is("published", true)` not `.eq("published", true)` — the latter
-  // hits a supabase-js client bug that silently drops rows (verified via
-  // /api/debug-rls: raw HTTP fetch with `published=eq.true` returns 5 rows;
-  // supabase-js `.eq("published", true)` returns 4, drops a specific row;
-  // `.is("published", true)` returns 5 like the raw fetch). RLS already
-  // enforces published=true for anon, so this filter is defense-in-depth.
+  // No `.order()` here — full PUBLIC_COLUMNS + `.order("date_listed", ...)`
+  // triggers a supabase-js silent-row-drop bug. Verified via /api/debug-rls:
+  // same query without order returns 6 rows; with order returns 5.
+  // `.range(0, 99)` and `.order("id")` also work as escape hatches.
+  // We sort in JS instead — fewer than 100 rows; cost is trivial.
   const { data, error } = await supabase
     .from("inventory")
     .select(PUBLIC_COLUMNS)
-    .is("published", true)
-    .order("date_listed", { ascending: false });
+    .is("published", true);
 
   if (error) {
     throw new Error(`Failed to fetch published listings: ${error.message}`);
@@ -104,6 +102,12 @@ export async function getPublishedListings(): Promise<PublicListing[]> {
   const real = ((data ?? []) as unknown as PublicListing[]).map(
     normalizeListing,
   );
+
+  real.sort((a, b) => {
+    const ad = a.date_listed ?? "";
+    const bd = b.date_listed ?? "";
+    return bd.localeCompare(ad);
+  });
 
   if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
     return [...real, ...DEMO_LISTINGS];
