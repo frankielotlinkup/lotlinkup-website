@@ -85,11 +85,18 @@ const PUBLIC_COLUMNS = [
 
 export async function getPublishedListings(): Promise<PublicListing[]> {
   const supabase = getSupabaseClient();
+  // Note: NOT using `{ nullsFirst: false }` here. Combined with the full
+  // PUBLIC_COLUMNS select, that triggers a supabase-js client bug that
+  // silently drops rows from the response (verified via /api/debug-rls —
+  // raw HTTP fetch with same params returns all rows; supabase-js returns
+  // a subset). All real published rows have non-null date_listed (sync
+  // writes it), so the nulls-handling option was dead code. Default order
+  // semantics work fine here.
   const { data, error } = await supabase
     .from("inventory")
     .select(PUBLIC_COLUMNS)
     .eq("published", true)
-    .order("date_listed", { ascending: false, nullsFirst: false });
+    .order("date_listed", { ascending: false });
 
   if (error) {
     throw new Error(`Failed to fetch published listings: ${error.message}`);
