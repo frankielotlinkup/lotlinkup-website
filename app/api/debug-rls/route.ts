@@ -100,36 +100,53 @@ export async function GET() {
     helperError = e instanceof Error ? e.message : String(e);
   }
 
-  // 5. Bisection — group-by-group to isolate which column drops rows
-  const groups: { name: string; cols: string }[] = [
-    { name: "geo", cols: "id, slug, latitude, longitude, google_maps_url" },
+  // 5. Variants — isolate order clause vs col combination
+  const variants: { name: string; run: () => Promise<{ data: unknown[] | null; error: { message: string } | null }> }[] = [
     {
-      name: "pricing",
-      cols:
-        "id, slug, cash_price, financing_available, down_payment, monthly_payment, term_months, interest_rate",
+      name: "minimal_with_order",
+      run: () =>
+        anon
+          .from("inventory")
+          .select(minimalCols)
+          .eq("published", true)
+          .order("date_listed", { ascending: false, nullsFirst: false }),
     },
     {
-      name: "details",
-      cols:
-        "id, slug, road_access, utilities, topography, nearest_recreation, nearest_town, best_use_cases",
+      name: "full_no_order",
+      run: () =>
+        anon.from("inventory").select(PUBLIC_COLUMNS_FULL).eq("published", true),
     },
     {
-      name: "narrative",
-      cols: "id, slug, description, lead_hook, main_image, gallery",
+      name: "full_no_order_no_filter",
+      run: () =>
+        admin.from("inventory").select(PUBLIC_COLUMNS_FULL),
     },
     {
-      name: "meta",
-      cols: "id, slug, state, state_code, city, county, acreage, date_listed, apn, available_terms",
+      name: "first_half",
+      run: () =>
+        anon
+          .from("inventory")
+          .select(
+            "id, slug, state, state_code, city, county, acreage, latitude, longitude, google_maps_url, cash_price, financing_available, down_payment, monthly_payment, term_months",
+          )
+          .eq("published", true),
+    },
+    {
+      name: "second_half",
+      run: () =>
+        anon
+          .from("inventory")
+          .select(
+            "id, slug, interest_rate, road_access, utilities, topography, nearest_recreation, nearest_town, best_use_cases, description, lead_hook, main_image, gallery, date_listed, apn, available_terms",
+          )
+          .eq("published", true),
     },
   ];
 
   const groupResults: Record<string, unknown> = {};
-  for (const g of groups) {
-    const r = await anon
-      .from("inventory")
-      .select(g.cols)
-      .eq("published", true);
-    groupResults[g.name] = {
+  for (const v of variants) {
+    const r = await v.run();
+    groupResults[v.name] = {
       count: r.data?.length ?? null,
       error: r.error?.message ?? null,
     };
