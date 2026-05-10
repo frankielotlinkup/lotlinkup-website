@@ -94,6 +94,82 @@ export async function GET() {
     .from("inventory")
     .select("id, slug, published, status")
     .eq("slug", "polk-county-tx-0-44-acres-livingston");
+  // Anon: full row view, no filter — show published/status for all 5 rows
+  // anon can see, so we can compare Polk's columns vs the rest.
+  const anonAllFull = await anon
+    .from("inventory")
+    .select("id, slug, published, status, date_listed");
+
+  // Anon with status='owned' filter only (no published filter)
+  const anonByStatus = await anon
+    .from("inventory")
+    .select("id, slug, published, status")
+    .eq("status", "owned");
+
+  // Anon with .is("published", true) — strict-boolean filter operator
+  const anonIsPublished = await anon
+    .from("inventory")
+    .select("id, slug, published, status")
+    .is("published", true);
+
+  // Raw fetch via PostgREST — bypasses supabase-js entirely. Same params
+  // as anonMinimal. If this returns 5 rows but anonMinimal returns 4,
+  // the bug is supabase-js. If both return 4, the bug is PostgREST/Postgres.
+  let rawFetchPublished: { count: number | null; slugs: string[]; error: string | null } = {
+    count: null,
+    slugs: [],
+    error: null,
+  };
+  try {
+    const r = await fetch(
+      `${url}/rest/v1/inventory?select=id,slug,published,status&published=eq.true`,
+      {
+        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+        cache: "no-store",
+      },
+    );
+    if (!r.ok) {
+      rawFetchPublished.error = `HTTP ${r.status}: ${await r.text()}`;
+    } else {
+      const rows = (await r.json()) as Array<{ slug: string }>;
+      rawFetchPublished = {
+        count: rows.length,
+        slugs: rows.map((x) => x.slug),
+        error: null,
+      };
+    }
+  } catch (e) {
+    rawFetchPublished.error = String(e);
+  }
+
+  // Raw fetch with NO filter — anon's full visibility (should match anon_all)
+  let rawFetchAll: { count: number | null; rows: unknown; error: string | null } = {
+    count: null,
+    rows: null,
+    error: null,
+  };
+  try {
+    const r = await fetch(
+      `${url}/rest/v1/inventory?select=id,slug,published,status`,
+      {
+        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+        cache: "no-store",
+      },
+    );
+    if (!r.ok) {
+      rawFetchAll.error = `HTTP ${r.status}: ${await r.text()}`;
+    } else {
+      const rows = await r.json();
+      rawFetchAll = {
+        count: Array.isArray(rows) ? rows.length : null,
+        rows,
+        error: null,
+      };
+    }
+  } catch (e) {
+    rawFetchAll.error = String(e);
+  }
+
   // Same query but no filter — what is anon's COMPLETE view of inventory
   const anonAll = await anon.from("inventory").select("id, slug");
   const adminAllSimple = await admin.from("inventory").select("id, slug");
@@ -127,6 +203,23 @@ export async function GET() {
       data: anonPolkBySlug.data,
       error: anonPolkBySlug.error?.message,
     },
+    anon_all_full: {
+      count: anonAllFull.data?.length ?? null,
+      rows: anonAllFull.data,
+      error: anonAllFull.error?.message ?? null,
+    },
+    anon_by_status: {
+      count: anonByStatus.data?.length ?? null,
+      rows: anonByStatus.data,
+      error: anonByStatus.error?.message ?? null,
+    },
+    anon_is_published: {
+      count: anonIsPublished.data?.length ?? null,
+      rows: anonIsPublished.data,
+      error: anonIsPublished.error?.message ?? null,
+    },
+    raw_fetch_published_eq_true: rawFetchPublished,
+    raw_fetch_all: rawFetchAll,
     anon_all_count: anonAll.data?.length ?? null,
     admin_all_count: adminAllSimple.data?.length ?? null,
   });
