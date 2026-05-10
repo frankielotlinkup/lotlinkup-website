@@ -7,6 +7,39 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { getPublishedListings } from "@/lib/listings";
+
+const PUBLIC_COLUMNS_FULL = [
+  "id",
+  "slug",
+  "state",
+  "state_code",
+  "city",
+  "county",
+  "acreage",
+  "latitude",
+  "longitude",
+  "google_maps_url",
+  "cash_price",
+  "financing_available",
+  "down_payment",
+  "monthly_payment",
+  "term_months",
+  "interest_rate",
+  "road_access",
+  "utilities",
+  "topography",
+  "nearest_recreation",
+  "nearest_town",
+  "best_use_cases",
+  "description",
+  "lead_hook",
+  "main_image",
+  "gallery",
+  "date_listed",
+  "apn",
+  "available_terms",
+].join(",");
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,33 +66,72 @@ export async function GET() {
     auth: { persistSession: false },
   });
 
-  const cols = "id, slug, published, status";
+  const minimalCols = "id, slug, published, status";
 
-  const anonResult = await anon
+  // 1. Anon, minimal columns, no order — same as before
+  const anonMinimal = await anon
     .from("inventory")
-    .select(cols)
-    .eq("published", true);
-  const adminResult = await admin
-    .from("inventory")
-    .select(cols)
+    .select(minimalCols)
     .eq("published", true);
 
-  type Row = { id: string; slug: string | null; published: boolean; status: string };
+  // 2. Anon, FULL PUBLIC_COLUMNS, with order by date_listed desc nullslast —
+  //    same query getPublishedListings() makes
+  const anonFull = await anon
+    .from("inventory")
+    .select(PUBLIC_COLUMNS_FULL)
+    .eq("published", true)
+    .order("date_listed", { ascending: false, nullsFirst: false });
+
+  // 3. Admin minimal — service role, no RLS
+  const adminMinimal = await admin
+    .from("inventory")
+    .select(minimalCols)
+    .eq("published", true);
+
+  // 4. Direct call to getPublishedListings() — what the page actually uses
+  let helperSlugs: (string | null)[] | null = null;
+  let helperCount: number | null = null;
+  let helperError: string | null = null;
+  try {
+    const helperRows = await getPublishedListings();
+    helperCount = helperRows.length;
+    helperSlugs = helperRows.map((l) => l.slug);
+  } catch (e) {
+    helperError = e instanceof Error ? e.message : String(e);
+  }
+
+  type SlugRow = { slug: string | null };
 
   return NextResponse.json({
-    anon: {
-      count: anonResult.data?.length ?? null,
+    anon_minimal: {
+      count: anonMinimal.data?.length ?? null,
       slugs:
-        (anonResult.data as Row[] | null)?.map((r) => r.slug ?? "(null slug)") ??
-        null,
-      error: anonResult.error?.message ?? null,
+        (anonMinimal.data as SlugRow[] | null)?.map(
+          (r) => r.slug ?? "(null)",
+        ) ?? null,
+      error: anonMinimal.error?.message ?? null,
     },
-    admin: {
-      count: adminResult.data?.length ?? null,
+    anon_full: {
+      count: anonFull.data?.length ?? null,
       slugs:
-        (adminResult.data as Row[] | null)?.map((r) => r.slug ?? "(null slug)") ??
-        null,
-      error: adminResult.error?.message ?? null,
+        (anonFull.data as SlugRow[] | null)?.map(
+          (r) => r.slug ?? "(null)",
+        ) ?? null,
+      error: anonFull.error?.message ?? null,
     },
+    admin_minimal: {
+      count: adminMinimal.data?.length ?? null,
+      slugs:
+        (adminMinimal.data as SlugRow[] | null)?.map(
+          (r) => r.slug ?? "(null)",
+        ) ?? null,
+      error: adminMinimal.error?.message ?? null,
+    },
+    helper: {
+      count: helperCount,
+      slugs: helperSlugs,
+      error: helperError,
+    },
+    demo_flag: process.env.NEXT_PUBLIC_LOTLINKUP_DEMO ?? null,
   });
 }
