@@ -100,6 +100,41 @@ export async function GET() {
     helperError = e instanceof Error ? e.message : String(e);
   }
 
+  // 5. Bisection — group-by-group to isolate which column drops rows
+  const groups: { name: string; cols: string }[] = [
+    { name: "geo", cols: "id, slug, latitude, longitude, google_maps_url" },
+    {
+      name: "pricing",
+      cols:
+        "id, slug, cash_price, financing_available, down_payment, monthly_payment, term_months, interest_rate",
+    },
+    {
+      name: "details",
+      cols:
+        "id, slug, road_access, utilities, topography, nearest_recreation, nearest_town, best_use_cases",
+    },
+    {
+      name: "narrative",
+      cols: "id, slug, description, lead_hook, main_image, gallery",
+    },
+    {
+      name: "meta",
+      cols: "id, slug, state, state_code, city, county, acreage, date_listed, apn, available_terms",
+    },
+  ];
+
+  const groupResults: Record<string, unknown> = {};
+  for (const g of groups) {
+    const r = await anon
+      .from("inventory")
+      .select(g.cols)
+      .eq("published", true);
+    groupResults[g.name] = {
+      count: r.data?.length ?? null,
+      error: r.error?.message ?? null,
+    };
+  }
+
   type SlugRow = { slug: string | null };
 
   return NextResponse.json({
@@ -132,6 +167,7 @@ export async function GET() {
       slugs: helperSlugs,
       error: helperError,
     },
+    bisect_groups: groupResults,
     demo_flag: process.env.NEXT_PUBLIC_LOTLINKUP_DEMO ?? null,
   });
 }
