@@ -32,11 +32,29 @@ export async function GET() {
     auth: { persistSession: false },
   });
 
-  // Admin view: ALL columns for ALL rows w/ drive_folder set, so we can
-  // diff the invisible-to-anon row vs the visible ones field-by-field
+  // Admin view: explicitly list every column we know exists, so we get
+  // them all in the response (PostgREST 'select *' was returning only 10
+  // for some reason — maybe a default-values quirk).
   const adminAll = await admin
     .from("inventory")
-    .select("*")
+    .select(
+      [
+        ...PUBLIC_COLUMNS_FULL.split(","),
+        "buy_price",
+        "sell_price",
+        "asking_price",
+        "closing_costs",
+        "misc_expenses",
+        "notes",
+        "lead_id",
+        "zoning",
+        "drive_folder",
+        "published",
+        "status",
+        "updated_at",
+        "created_at",
+      ].join(","),
+    )
     .not("drive_folder", "is", null);
 
   // Anon view of published (full PUBLIC_COLUMNS — what the helper uses now)
