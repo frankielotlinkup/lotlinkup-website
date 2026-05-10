@@ -80,6 +80,24 @@ export async function GET() {
     /* ignore */
   }
 
+  // Anon by APN — direct lookup of Polk and Walker for comparison
+  const anonPolkByApn = await anon
+    .from("inventory")
+    .select("id, slug, published, status, apn")
+    .eq("apn", "34704");
+  const anonWalkerByApn = await anon
+    .from("inventory")
+    .select("id, slug, published, status, apn")
+    .eq("apn", "1706143000029003");
+  // Anon by slug
+  const anonPolkBySlug = await anon
+    .from("inventory")
+    .select("id, slug, published, status")
+    .eq("slug", "polk-county-tx-0-44-acres-livingston");
+  // Same query but no filter — what is anon's COMPLETE view of inventory
+  const anonAll = await anon.from("inventory").select("id, slug");
+  const adminAllSimple = await admin.from("inventory").select("id, slug");
+
   type Row = Record<string, unknown>;
   return NextResponse.json({
     admin_all_rows: adminAll.data ?? adminAll.error?.message,
@@ -97,5 +115,19 @@ export async function GET() {
       error: anonMinimal.error?.message ?? null,
     },
     helper: helperResult,
+    anon_polk_by_apn: {
+      data: anonPolkByApn.data,
+      error: anonPolkByApn.error?.message,
+    },
+    anon_walker_by_apn: {
+      data: anonWalkerByApn.data,
+      error: anonWalkerByApn.error?.message,
+    },
+    anon_polk_by_slug: {
+      data: anonPolkBySlug.data,
+      error: anonPolkBySlug.error?.message,
+    },
+    anon_all_count: anonAll.data?.length ?? null,
+    admin_all_count: adminAllSimple.data?.length ?? null,
   });
 }
