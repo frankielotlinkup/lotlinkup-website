@@ -80,7 +80,7 @@ export function LiveUsMap({
 
   const supercluster = useMemo(() => {
     const sc = new Supercluster<PinProps>({
-      radius: 50,
+      radius: 20,
       maxZoom: 14,
     });
     sc.load(
