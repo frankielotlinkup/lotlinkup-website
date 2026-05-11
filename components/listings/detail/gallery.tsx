@@ -12,7 +12,15 @@ function isImageUrl(s: string): boolean {
   return s.startsWith("http") || s.startsWith("/");
 }
 
-function Slide({ src, eager = false }: { src: string; eager?: boolean }) {
+function Slide({
+  src,
+  eager = false,
+  fit = "cover",
+}: {
+  src: string;
+  eager?: boolean;
+  fit?: "cover" | "contain";
+}) {
   if (isImageUrl(src)) {
     return (
       <Image
@@ -20,7 +28,7 @@ function Slide({ src, eager = false }: { src: string; eager?: boolean }) {
         alt=""
         fill
         sizes="(min-width: 1024px) 1200px, 100vw"
-        className="object-cover"
+        className={fit === "contain" ? "object-contain" : "object-cover"}
         priority={eager}
       />
     );
@@ -238,7 +246,7 @@ export function Gallery({ slides, badge }: GalleryProps) {
               auto on the image so clicks on the photo itself don't close. */}
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-2 py-12 md:px-16 md:py-12">
             <div className="pointer-events-auto relative aspect-[16/9] w-full max-w-[1600px] overflow-hidden bg-ink-charcoal shadow-[0_30px_80px_-20px_rgba(0,0,0,0.75)] ring-1 ring-white/10">
-              <Slide src={slides[lightboxIndex] ?? ""} />
+              <Slide src={slides[lightboxIndex] ?? ""} fit="contain" />
             </div>
           </div>
 
