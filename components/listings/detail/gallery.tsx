@@ -159,12 +159,12 @@ export function Gallery({ slides, badge }: GalleryProps) {
                 >
                   <Slide src={src} />
                   {showMoreOverlay && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-ink/25">
-                      <div className="flex flex-col items-center gap-1 rounded-md bg-ink px-5 py-3 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.6)] ring-1 ring-paper/15">
-                        <span className="font-serif text-3xl font-semibold leading-none text-paper">
+                    <div className="absolute inset-0 flex items-center justify-center bg-ink/30">
+                      <div className="flex flex-col items-center gap-1 rounded-md bg-ink/90 px-4 py-2.5 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.55)] backdrop-blur-sm">
+                        <span className="font-serif text-3xl font-semibold leading-none text-paper drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
                           +{extraCount}
                         </span>
-                        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">
                           more photos
                         </span>
                       </div>
