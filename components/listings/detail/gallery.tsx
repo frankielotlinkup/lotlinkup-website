@@ -110,13 +110,33 @@ export function Gallery({ slides, badge }: GalleryProps) {
           type="button"
           onClick={() => openLightbox(0)}
           aria-label="Open gallery in fullscreen"
-          className="relative block aspect-[16/9] w-full overflow-hidden rounded-md bg-ink-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          className="group relative block aspect-[16/9] w-full overflow-hidden rounded-md bg-ink-charcoal shadow-[0_18px_40px_-22px_rgba(15,17,21,0.35)] ring-1 ring-paper-edge/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <Slide src={heroSlide} eager />
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/15 to-transparent" />
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
           <div className="absolute left-4 top-4">
             <Badge kind={badge} />
           </div>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-paper/95 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-ink shadow-sm transition-transform group-hover:scale-[1.03]"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            View all {slides.length} photos
+          </span>
         </button>
 
         {thumbSlides.length > 0 && (
@@ -135,13 +155,16 @@ export function Gallery({ slides, badge }: GalleryProps) {
                       ? `View all ${slides.length} photos`
                       : `Open gallery at photo ${slideIndex + 1}`
                   }
-                  className="relative aspect-[4/3] w-full overflow-hidden rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  className="relative aspect-[4/3] w-full overflow-hidden rounded-md ring-1 ring-paper-edge/60 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                 >
                   <Slide src={src} />
                   {showMoreOverlay && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-ink/55">
-                      <span className="font-serif text-2xl font-semibold text-paper">
-                        +{extraCount} more
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-ink/75 backdrop-blur-[1px]">
+                      <span className="font-serif text-3xl font-semibold leading-none text-paper">
+                        +{extraCount}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-paper/85">
+                        more photos
                       </span>
                     </div>
                   )}
@@ -211,8 +234,8 @@ export function Gallery({ slides, badge }: GalleryProps) {
 
           {/* Image — pointer-events:none on wrapper so backdrop clicks pass through;
               auto on the image so clicks on the photo itself don't close. */}
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4 py-20 md:px-20">
-            <div className="pointer-events-auto relative aspect-[16/9] w-full max-w-5xl overflow-hidden rounded-md bg-ink-charcoal">
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-2 py-12 md:px-16 md:py-12">
+            <div className="pointer-events-auto relative aspect-[16/9] w-full max-w-[1600px] overflow-hidden bg-ink-charcoal shadow-[0_30px_80px_-20px_rgba(0,0,0,0.75)] ring-1 ring-white/10">
               <Slide src={slides[lightboxIndex] ?? ""} />
             </div>
           </div>
