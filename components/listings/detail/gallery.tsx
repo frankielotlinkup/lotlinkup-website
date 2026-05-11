@@ -120,7 +120,7 @@ export function Gallery({ slides, badge }: GalleryProps) {
           aria-label="Open gallery in fullscreen"
           className="group relative block aspect-[16/9] w-full overflow-hidden rounded-md bg-ink-charcoal shadow-[0_18px_40px_-22px_rgba(15,17,21,0.35)] ring-1 ring-paper-edge/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
-          <Slide src={heroSlide} eager />
+          <Slide src={heroSlide} eager fit="contain" />
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
           <div className="absolute left-4 top-4">
             <Badge kind={badge} />
