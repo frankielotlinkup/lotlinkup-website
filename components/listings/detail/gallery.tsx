@@ -46,13 +46,19 @@ function Badge({ kind }: { kind: GalleryProps["badge"] }) {
 }
 
 export function Gallery({ slides, badge }: GalleryProps) {
-  const [hero, setHero] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [activeMobileIndex, setActiveMobileIndex] = useState(0);
 
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const mobileSlideRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Desktop preview: hero + up to 4 thumbnails. If more photos exist
+  // beyond those 5, the 4th thumb gets a "+N more" overlay that opens
+  // the lightbox showing the rest.
+  const heroSlide = slides[0] ?? "";
+  const thumbSlides = slides.slice(1, 5);
+  const extraCount = Math.max(0, slides.length - 5);
 
   // Mobile dot indicator via IntersectionObserver
   useEffect(() => {
@@ -98,41 +104,50 @@ export function Gallery({ slides, badge }: GalleryProps) {
 
   return (
     <>
-      {/* Desktop: hero + filmstrip */}
+      {/* Desktop: hero + 4-thumb preview row */}
       <div className="hidden md:block">
         <button
           type="button"
-          onClick={() => openLightbox(hero)}
+          onClick={() => openLightbox(0)}
           aria-label="Open gallery in fullscreen"
           className="relative block aspect-[16/9] w-full overflow-hidden rounded-md bg-ink-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
-          <Slide src={slides[hero] ?? ""} eager />
+          <Slide src={heroSlide} eager />
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/15 to-transparent" />
-          {hero === 0 && (
-            <div className="absolute left-4 top-4">
-              <Badge kind={badge} />
-            </div>
-          )}
+          <div className="absolute left-4 top-4">
+            <Badge kind={badge} />
+          </div>
         </button>
 
-        {slides.length > 1 && (
+        {thumbSlides.length > 0 && (
           <div className="mt-3 grid grid-cols-4 gap-3">
-            {slides.map((src, i) => (
-              <button
-                key={`${src}-${i}`}
-                type="button"
-                onClick={() => setHero(i)}
-                aria-label={`Show photo ${i + 1}`}
-                aria-current={i === hero}
-                className={`relative aspect-[4/3] w-full overflow-hidden rounded-md transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-                  i === hero
-                    ? "ring-2 ring-accent ring-offset-2 ring-offset-paper"
-                    : "opacity-80 hover:opacity-100"
-                }`}
-              >
-                <Slide src={src} />
-              </button>
-            ))}
+            {thumbSlides.map((src, i) => {
+              const slideIndex = i + 1;
+              const isLast = i === thumbSlides.length - 1;
+              const showMoreOverlay = isLast && extraCount > 0;
+              return (
+                <button
+                  key={`${src}-${slideIndex}`}
+                  type="button"
+                  onClick={() => openLightbox(slideIndex)}
+                  aria-label={
+                    showMoreOverlay
+                      ? `View all ${slides.length} photos`
+                      : `Open gallery at photo ${slideIndex + 1}`
+                  }
+                  className="relative aspect-[4/3] w-full overflow-hidden rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                >
+                  <Slide src={src} />
+                  {showMoreOverlay && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-ink/55">
+                      <span className="font-serif text-2xl font-semibold text-paper">
+                        +{extraCount} more
+                      </span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
