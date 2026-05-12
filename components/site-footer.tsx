@@ -67,12 +67,20 @@ export function SiteFooter() {
                 </Link>
               </li>
             </ul>
-            <a
-              href="mailto:lotlinkup@example.com"
-              className="type-small text-ink-soft mt-6 inline-block hover:text-accent transition-colors"
-            >
-              lotlinkup@example.com
-            </a>
+            <div className="mt-6 flex flex-col gap-1">
+              <a
+                href="mailto:andrew@lotlinkup.com"
+                className="type-small text-ink-soft hover:text-accent transition-colors"
+              >
+                andrew@lotlinkup.com
+              </a>
+              <a
+                href="mailto:frankie@lotlinkup.com"
+                className="type-small text-ink-soft hover:text-accent transition-colors"
+              >
+                frankie@lotlinkup.com
+              </a>
+            </div>
           </div>
         </div>
       </Container>
