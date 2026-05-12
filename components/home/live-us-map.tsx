@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import Supercluster from "supercluster";
 import type { ClusterFeature, PointFeature } from "supercluster";
+import { computeMonthlyPayment } from "@/lib/financing";
 
 export type Pin = {
   id: string;
@@ -21,7 +22,9 @@ export type Pin = {
   state_code: string | null;
   financing_available: boolean | null;
   cash_price: number | null;
-  monthly_payment: number | null;
+  down_payment: number | null;
+  term_months: number | null;
+  interest_rate: number | null;
 };
 
 type PinProps = { pin: Pin };
@@ -211,7 +214,16 @@ export function LiveUsMap({
             {popupPin.financing_available ? (
               <>
                 <p className="mt-2 font-serif text-[24px] font-bold leading-tight text-ink">
-                  {fmtMoney(popupPin.monthly_payment)}
+                  {fmtMoney(
+                    Math.round(
+                      computeMonthlyPayment({
+                        cashPrice: popupPin.cash_price,
+                        downPayment: popupPin.down_payment,
+                        termMonths: popupPin.term_months,
+                        annualRate: popupPin.interest_rate,
+                      }),
+                    ),
+                  )}
                   <span className="ml-0.5 text-[14px] font-normal text-ink-soft">
                     /mo
                   </span>

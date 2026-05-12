@@ -1,16 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
-const FALLBACK_TERMS: number[] = [24, 36, 48, 60];
-
-function parseTerms(raw: string | null | undefined): number[] {
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => Number.isFinite(n) && n > 0);
-}
+import { computeMonthlyPayment, termsForListing } from "@/lib/financing";
 
 function fmtUSD(n: number, decimals = 0): string {
   return n.toLocaleString("en-US", {
@@ -19,25 +10,6 @@ function fmtUSD(n: number, decimals = 0): string {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
-}
-
-function computeMonthly({
-  cashPrice,
-  downPayment,
-  termMonths,
-  annualRate,
-}: {
-  cashPrice: number;
-  downPayment: number;
-  termMonths: number;
-  annualRate: number;
-}): number {
-  const principal = Math.max(0, cashPrice - downPayment);
-  if (principal === 0 || termMonths <= 0) return 0;
-  const monthlyRate = annualRate / 12 / 100;
-  if (monthlyRate === 0) return principal / termMonths;
-  const factor = Math.pow(1 + monthlyRate, termMonths);
-  return (principal * monthlyRate * factor) / (factor - 1);
 }
 
 function snap(value: number, step: number, min: number, max: number): number {
@@ -51,27 +23,24 @@ export function FinancingCalculator({
   minDownPayment,
   defaultTermMonths,
   annualRate,
-  availableTerms,
 }: {
   cashPrice: number;
   minDownPayment: number;
   defaultTermMonths: number;
   annualRate: number;
-  availableTerms: string | null;
 }) {
   const sliderMax = Math.max(minDownPayment, Math.round(cashPrice * 0.7));
-  const parsed = parseTerms(availableTerms);
-  const terms = parsed.length > 0 ? parsed : FALLBACK_TERMS;
+  const terms = termsForListing(defaultTermMonths);
   const initialTerm = terms.includes(defaultTermMonths)
     ? defaultTermMonths
-    : terms[0];
+    : terms[terms.length - 1] ?? defaultTermMonths;
 
   const [downPayment, setDownPayment] = useState(minDownPayment);
   const [term, setTerm] = useState<number>(initialTerm);
 
   const monthly = useMemo(
     () =>
-      computeMonthly({
+      computeMonthlyPayment({
         cashPrice,
         downPayment,
         termMonths: term,

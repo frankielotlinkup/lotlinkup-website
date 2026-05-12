@@ -16,7 +16,9 @@ function toPin(l: PublicListing): Pin | null {
     state_code: l.state_code,
     financing_available: l.financing_available,
     cash_price: l.cash_price,
-    monthly_payment: l.monthly_payment,
+    down_payment: l.down_payment,
+    term_months: l.term_months,
+    interest_rate: l.interest_rate,
   };
 }
 

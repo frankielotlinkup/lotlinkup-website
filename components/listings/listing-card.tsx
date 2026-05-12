@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { PublicListing } from "@/lib/listings";
+import { computeMonthlyPayment } from "@/lib/financing";
 
 function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
@@ -72,7 +73,17 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
 
           {isFinanced ? (
             <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
-              ${formatNumber(listing.monthly_payment ?? 0)}
+              $
+              {formatNumber(
+                Math.round(
+                  computeMonthlyPayment({
+                    cashPrice: listing.cash_price,
+                    downPayment: listing.down_payment,
+                    termMonths: listing.term_months,
+                    annualRate: listing.interest_rate,
+                  }),
+                ),
+              )}
               <span className="ml-1 text-[18px] font-normal text-ink-soft">
                 /mo
               </span>

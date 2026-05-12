@@ -1,5 +1,6 @@
 import type { PublicListing } from "@/lib/listings";
 import { formatPhoneDisplay, formatPhoneHref } from "@/lib/format";
+import { computeMonthlyPayment } from "@/lib/financing";
 
 function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
@@ -67,7 +68,17 @@ export function TitleBlock({
             {isFinanced ? (
               <>
                 <p className="font-serif text-[40px] font-bold leading-tight text-ink md:text-[48px]">
-                  ${formatNumber(listing.monthly_payment ?? 0)}
+                  $
+                  {formatNumber(
+                    Math.round(
+                      computeMonthlyPayment({
+                        cashPrice: listing.cash_price,
+                        downPayment: listing.down_payment,
+                        termMonths: listing.term_months,
+                        annualRate: listing.interest_rate,
+                      }),
+                    ),
+                  )}
                   <span className="ml-1 text-[20px] font-normal text-ink-soft md:text-[22px]">
                     /mo
                   </span>
