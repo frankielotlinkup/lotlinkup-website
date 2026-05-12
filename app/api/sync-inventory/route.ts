@@ -90,9 +90,9 @@ export async function POST(req: Request) {
   });
 
   const report = {
-    created: 0,
     updated: 0,
     archived: 0,
+    unmatched: [] as { folder: string; apn: string | null; slug: string }[],
     errors: [] as { folder: string; error: string }[],
     seen_folder_ids: [] as string[],
   };
@@ -183,7 +183,10 @@ async function syncPropertyFolder(
   supa: SupabaseClient,
   pf: drive_v3.Schema$File,
   stateName: FolderState,
-  report: { created: number; updated: number }
+  report: {
+    updated: number;
+    unmatched: { folder: string; apn: string | null; slug: string }[];
+  }
 ) {
   const folderId = pf.id!;
   const folderName = pf.name!;
@@ -280,8 +283,14 @@ async function syncPropertyFolder(
     await supa.from('inventory').update(row).eq('id', existing.id);
     report.updated++;
   } else {
-    await supa.from('inventory').insert(row);
-    report.created++;
+    // CRM is the gatekeeper for new lots. If we can't match by APN or slug,
+    // skip insert and report so Andrew can fix the APN in either CRM or
+    // property-info.md and re-run.
+    report.unmatched.push({
+      folder: folderName,
+      apn: parsed.apn ?? null,
+      slug,
+    });
   }
 }
 
