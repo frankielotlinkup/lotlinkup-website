@@ -76,11 +76,10 @@ function PlotPinC({ size = 96 }: { size?: number }) {
   );
 }
 
-/* ---- 2D: Stylized US silhouette with a pin ---- */
+/* ---- 2D: Stylized US silhouette with a pin (v1 — abstract blob) ---- */
 function PlotPinUS({ size = 96 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      {/* Highly simplified contiguous-US outline */}
       <path
         d="M6 24 L10 18 L20 16 L30 18 L42 14 L52 16 L58 22 L58 34 L54 40 L46 42 L44 48 L40 46 L34 44 L26 44 L18 42 L10 36 L6 30 Z"
         stroke={accent}
@@ -88,12 +87,65 @@ function PlotPinUS({ size = 96 }: { size?: number }) {
         strokeLinejoin="round"
         fill="none"
       />
-      {/* Pin sitting on Texas-ish location */}
       <path
         d="M34 26 C30 26 28 29 28 32 C28 36 34 44 34 44 C34 44 40 36 40 32 C40 29 38 26 34 26 Z"
         fill={accent}
       />
       <circle cx="34" cy="32" r="2" fill="white" />
+    </svg>
+  );
+}
+
+/* ---- 2G: More recognizable simplified US outline + pin ---- */
+function PlotPinUSv2({ size = 96 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 128 80" fill="none">
+      {/* Simplified contiguous US outline — west coast curve, top border,
+          east coast with Florida tail, Texas/Gulf bulge. Stylized but
+          should read instantly as the US. */}
+      <path
+        d="M6 28
+           Q4 22 8 18
+           L18 14
+           L26 12
+           L40 14
+           L56 12
+           L72 12
+           L88 12
+           L100 14
+           L110 18
+           L120 22
+           L122 28
+           L118 34
+           L112 38
+           L104 42
+           L98 44
+           L94 50
+           L92 58
+           L86 60
+           L82 54
+           L76 50
+           L68 48
+           L60 46
+           L52 46
+           L44 48
+           L36 48
+           L28 46
+           L22 42
+           L16 38
+           L10 34
+           Z"
+        stroke={accent}
+        strokeWidth="2.8"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Pin — sitting roughly over Texas */}
+      <path
+        d="M62 28 C56 28 53 32 53 36 C53 42 62 54 62 54 C62 54 71 42 71 36 C71 32 68 28 62 28 Z"
+        fill={accent}
+      />
+      <circle cx="62" cy="36" r="2.6" fill="white" />
     </svg>
   );
 }
@@ -296,6 +348,7 @@ const families = [
       { code: "2B", mark: <PlotPinB />, big: <PlotPinB size={144} /> },
       { code: "2C", mark: <PlotPinC />, big: <PlotPinC size={144} /> },
       { code: "2D — US outline", mark: <PlotPinUS />, big: <PlotPinUS size={144} /> },
+      { code: "2G — US outline v2", mark: <PlotPinUSv2 />, big: <PlotPinUSv2 size={144} /> },
       { code: "2E — waterfront", mark: <PlotPinWaterfront />, big: <PlotPinWaterfront size={144} /> },
       { code: "2F — Texas outline", mark: <PlotPinTexas />, big: <PlotPinTexas size={144} /> },
     ],
