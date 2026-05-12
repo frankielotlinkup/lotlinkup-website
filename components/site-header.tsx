@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LogoMark } from "@/components/brand/logo";
 
 const NAV_LINKS = [
   { href: "/land-for-sale", label: "Land for Sale" },
@@ -65,10 +66,11 @@ export function SiteHeader() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-8">
           <Link
             href="/"
-            className={`font-serif text-2xl font-normal tracking-[-0.01em] transition-colors ${logoColor} ${navTextShadow}`}
+            className={`inline-flex items-center gap-2 font-serif text-2xl font-normal tracking-[-0.01em] transition-colors ${logoColor} ${navTextShadow}`}
             aria-label="Lot Linkup home"
           >
-            Lot Linkup
+            <LogoMark size={28} />
+            <span>Lot Linkup</span>
           </Link>
           <nav
             className="hidden md:flex items-center gap-8"
@@ -125,10 +127,11 @@ export function SiteHeader() {
           <div className="flex h-16 items-center justify-between px-6 border-b border-paper-edge">
             <Link
               href="/"
-              className="font-serif text-2xl font-normal tracking-[-0.01em] text-accent"
+              className="inline-flex items-center gap-2 font-serif text-2xl font-normal tracking-[-0.01em] text-accent"
               onClick={() => setMenuOpen(false)}
             >
-              Lot Linkup
+              <LogoMark size={28} />
+              <span>Lot Linkup</span>
             </Link>
             <button
               type="button"

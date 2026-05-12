@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "./container";
+import { LogoMark } from "@/components/brand/logo";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -8,9 +9,10 @@ export function SiteFooter() {
       <Container>
         <div className="grid gap-12 py-16 md:grid-cols-3 md:gap-8 lg:py-20">
           <div>
-            <p className="font-serif text-2xl font-normal tracking-[-0.01em] text-accent">
-              Lot Linkup
-            </p>
+            <div className="inline-flex items-center gap-2 font-serif text-2xl font-normal tracking-[-0.01em] text-accent">
+              <LogoMark size={28} />
+              <span>Lot Linkup</span>
+            </div>
             <p className="type-body text-ink-soft mt-3 max-w-xs">
               Rural land, made accessible.
             </p>
