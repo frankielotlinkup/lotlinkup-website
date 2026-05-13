@@ -12,7 +12,7 @@ const STEPS = [
   {
     n: "01",
     title: "Find a lot you like",
-    body: "Browse the listings page or look at the map. Every lot is owned outright by us — what you see is what's available right now. The card shows the cash price, the minimum down, and the monthly payment if you finance it.",
+    body: "Browse the listings page or look at the map. What you see is what's available right now. The card shows the cash price, and — for lots we finance — the minimum down and the monthly payment.",
   },
   {
     n: "02",
@@ -50,10 +50,10 @@ export default function HowItWorksPage() {
               Land you can finance directly with us.
             </h1>
             <p className="type-body text-ink-soft mt-6 max-w-2xl">
-              We own every lot we list and we finance every lot we sell. No
-              banks, no credit checks, no jumping through hoops. Just rural
-              land, a clear monthly payment, and a clear path to owning it
-              outright.
+              Most of the land we list is offered with seller financing — no
+              banks, no credit checks, no jumping through hoops. A handful of
+              our premium lots are cash only; everything else is a clear
+              monthly payment and a clear path to owning the land outright.
             </p>
           </header>
         </Container>
@@ -126,8 +126,8 @@ export default function HowItWorksPage() {
           </h2>
           <p className="type-body text-ink-soft mt-4 max-w-2xl">
             Which one we use depends on the state the property is in and, in
-            some cases, what the original seller prefers. Both end the same
-            way: you own the land outright when the loan is paid off.
+            some cases, which structure you&apos;d rather sign. Both end the
+            same way: you own the land outright when the loan is paid off.
           </p>
 
           <div className="mt-12 grid gap-8 md:grid-cols-2 md:gap-10">
