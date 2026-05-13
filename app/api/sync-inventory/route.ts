@@ -56,6 +56,7 @@ type ParsedProperty = {
   google_maps_url?: string;
   // pricing
   cash_price?: number;
+  finance_price?: number;
   asking_price?: number;
   financing_available?: boolean;
   down_payment?: number;
@@ -235,6 +236,7 @@ async function syncPropertyFolder(
     latitude: coords?.latitude ?? null,
     longitude: coords?.longitude ?? null,
     cash_price: parsed.cash_price,
+    finance_price: parsed.finance_price,
     asking_price: parsed.cash_price, // mirror unless explicitly different
     financing_available: parsed.financing_available ?? false,
     down_payment: parsed.down_payment,
@@ -344,6 +346,7 @@ function parsePropertyMd(md: string): ParsedProperty {
     apn: fields['apn'],
     google_maps_url: fields['maps link'],
     cash_price: num('cash price'),
+    finance_price: num('financed price'),
     financing_available: bool('owner financing'),
     down_payment: num('down payment'),
     monthly_payment: num('monthly payment'),

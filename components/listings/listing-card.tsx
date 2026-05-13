@@ -77,6 +77,7 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
               {formatNumber(
                 Math.round(
                   computeMonthlyPayment({
+                    financePrice: listing.finance_price,
                     cashPrice: listing.cash_price,
                     downPayment: listing.down_payment,
                     termMonths: listing.term_months,
@@ -96,7 +97,7 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
 
           <p className="mb-4 text-[13px] text-muted">
             {isFinanced
-              ? `$${formatNumber(listing.cash_price ?? 0)} cash · $${formatNumber(listing.down_payment ?? 0)} down · ${listing.term_months ?? 0} months`
+              ? `$${formatNumber(listing.down_payment ?? 0)} down · Cash $${formatNumber(listing.cash_price ?? 0)}${listing.finance_price != null ? ` · Finance $${formatNumber(listing.finance_price)}` : ""}`
               : "Cash sale"}
           </p>
 

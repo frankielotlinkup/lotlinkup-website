@@ -104,6 +104,7 @@ export default async function ListingDetailPage({
         {isFinanced && listing.cash_price != null && (
           <div className="mt-16 md:mt-24">
             <FinancingCalculator
+              financePrice={listing.finance_price ?? listing.cash_price}
               cashPrice={listing.cash_price}
               minDownPayment={listing.down_payment ?? 0}
               defaultTermMonths={listing.term_months ?? 60}

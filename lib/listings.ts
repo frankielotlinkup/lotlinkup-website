@@ -34,6 +34,7 @@ export type PublicListing = {
   longitude: number | null;
   google_maps_url: string | null;
   cash_price: number | null;
+  finance_price: number | null;
   financing_available: boolean | null;
   down_payment: number | null;
   monthly_payment: number | null;
@@ -66,6 +67,7 @@ const PUBLIC_COLUMNS = [
   "longitude",
   "google_maps_url",
   "cash_price",
+  "finance_price",
   "financing_available",
   "down_payment",
   "monthly_payment",

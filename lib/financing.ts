@@ -1,20 +1,23 @@
-// Standard amortization formula. cash_price/down_payment/term/rate are the
-// source of truth — any precomputed monthly_payment from CRM/property-info.md
-// is ignored on the website so the card, detail page header, map popup, and
-// calculator all show the same number.
+// Amortization runs on the seller-finance principal: financePrice - downPayment.
+// cashPrice is the discounted price for an all-cash buyer and is *not* the
+// basis for monthly payments. Old/cash-only rows that don't carry a
+// finance_price fall back to cashPrice so the page still renders something
+// sane — but for any lot we actually finance, finance_price must be set.
 
 export function computeMonthlyPayment({
+  financePrice,
   cashPrice,
   downPayment,
   termMonths,
   annualRate,
 }: {
+  financePrice: number | null | undefined;
   cashPrice: number | null | undefined;
   downPayment: number | null | undefined;
   termMonths: number | null | undefined;
   annualRate: number | null | undefined;
 }): number {
-  const price = cashPrice ?? 0;
+  const price = financePrice ?? cashPrice ?? 0;
   const down = downPayment ?? 0;
   const term = termMonths ?? 0;
   const rate = annualRate ?? 0;

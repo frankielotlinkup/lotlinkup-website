@@ -72,6 +72,7 @@ export function TitleBlock({
                   {formatNumber(
                     Math.round(
                       computeMonthlyPayment({
+                        financePrice: listing.finance_price,
                         cashPrice: listing.cash_price,
                         downPayment: listing.down_payment,
                         termMonths: listing.term_months,
@@ -84,9 +85,16 @@ export function TitleBlock({
                   </span>
                 </p>
                 <p className="mt-2 text-sm text-ink-soft">
-                  ${formatNumber(listing.cash_price ?? 0)} cash · $
-                  {formatNumber(listing.down_payment ?? 0)} down ·{" "}
+                  ${formatNumber(listing.down_payment ?? 0)} down ·{" "}
                   {listing.term_months ?? 0} months
+                </p>
+                <p className="mt-1 text-sm text-ink-soft">
+                  Or pay cash: ${formatNumber(listing.cash_price ?? 0)}
+                  {listing.finance_price != null && (
+                    <span className="text-muted">
+                      {" · "}Finance price ${formatNumber(listing.finance_price)}
+                    </span>
+                  )}
                 </p>
               </>
             ) : (

@@ -19,17 +19,19 @@ function snap(value: number, step: number, min: number, max: number): number {
 }
 
 export function FinancingCalculator({
+  financePrice,
   cashPrice,
   minDownPayment,
   defaultTermMonths,
   annualRate,
 }: {
+  financePrice: number;
   cashPrice: number;
   minDownPayment: number;
   defaultTermMonths: number;
   annualRate: number;
 }) {
-  const sliderMax = Math.max(minDownPayment, Math.round(cashPrice * 0.7));
+  const sliderMax = Math.max(minDownPayment, Math.round(financePrice * 0.7));
   const terms = termsForListing(defaultTermMonths);
   const initialTerm = terms.includes(defaultTermMonths)
     ? defaultTermMonths
@@ -41,18 +43,19 @@ export function FinancingCalculator({
   const monthly = useMemo(
     () =>
       computeMonthlyPayment({
+        financePrice,
         cashPrice,
         downPayment,
         termMonths: term,
         annualRate,
       }),
-    [cashPrice, downPayment, term, annualRate],
+    [financePrice, cashPrice, downPayment, term, annualRate],
   );
   const monthlyRounded = Math.round(monthly);
   const totalPayments = monthlyRounded * term;
   const totalInterest = Math.max(
     0,
-    totalPayments - (cashPrice - downPayment),
+    totalPayments - (financePrice - downPayment),
   );
 
   return (
@@ -60,6 +63,10 @@ export function FinancingCalculator({
       <h2 className="type-h2">Run your numbers</h2>
       <p className="mt-3 text-base text-ink-soft">
         Adjust the down payment and term to find what works for you.
+      </p>
+      <p className="mt-2 text-sm text-muted">
+        Cash price {fmtUSD(cashPrice)} · Finance price {fmtUSD(financePrice)}.
+        Monthly payment amortizes the finance price minus your down payment.
       </p>
 
       <div className="mt-10 grid gap-10 md:grid-cols-2 md:gap-12">

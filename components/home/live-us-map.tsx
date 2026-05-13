@@ -22,6 +22,7 @@ export type Pin = {
   state_code: string | null;
   financing_available: boolean | null;
   cash_price: number | null;
+  finance_price: number | null;
   down_payment: number | null;
   term_months: number | null;
   interest_rate: number | null;
@@ -217,6 +218,7 @@ export function LiveUsMap({
                   {fmtMoney(
                     Math.round(
                       computeMonthlyPayment({
+                        financePrice: popupPin.finance_price,
                         cashPrice: popupPin.cash_price,
                         downPayment: popupPin.down_payment,
                         termMonths: popupPin.term_months,

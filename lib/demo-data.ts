@@ -22,6 +22,7 @@ const NULL_LISTING: Omit<PublicListing, "id"> = {
   longitude: null,
   google_maps_url: null,
   cash_price: null,
+  finance_price: null,
   financing_available: null,
   down_payment: null,
   monthly_payment: null,
