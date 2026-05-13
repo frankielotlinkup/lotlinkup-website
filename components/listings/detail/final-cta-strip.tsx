@@ -8,7 +8,7 @@ export function FinalCtaStrip({ phone }: { phone: string | null }) {
           Ready to make this yours?
         </h2>
         <p className="mt-4 text-base leading-[1.55] text-paper/80 md:text-[17px]">
-          Reach out and we&apos;ll get you the details, financing options, and
+          Reach out and we&apos;ll get you the details, the numbers, and
           answers to anything you need.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

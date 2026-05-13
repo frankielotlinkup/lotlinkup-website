@@ -6,8 +6,8 @@ const STEPS = [
     body: "Around 3 weeks or less. No banks, no underwriting drama.",
   },
   {
-    title: "The land is yours from day one",
-    body: "Warranty deed transfers to you when your down payment is made. You own the land while you pay it off.",
+    title: "Use the land from day one",
+    body: "Build, camp, hold — it's yours to use the moment closing is done. Title transfers at closing or at payoff, depending on the structure we use.",
   },
   {
     title: "Make monthly payments",
