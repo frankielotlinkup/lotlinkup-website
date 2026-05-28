@@ -33,7 +33,7 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const listing = await getListingBySlug(params.slug);
-  if (!listing) return { title: { absolute: "Listing not found · Lot Linkup" } };
+  if (!listing) return { title: { absolute: "Listing not found · LotLinkUp" } };
 
   const place =
     listing.city && listing.state_code
@@ -44,7 +44,7 @@ export async function generateMetadata({
   const titleStem = `${acreageStr} in ${place}`.trim();
 
   return {
-    title: { absolute: `${titleStem} | Lot Linkup` },
+    title: { absolute: `${titleStem} | LotLinkUp` },
     description:
       listing.lead_hook ??
       (listing.description ? listing.description.slice(0, 160) : undefined),

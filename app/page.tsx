@@ -11,16 +11,16 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Lot Linkup — Rural land for sale, with financing",
+    absolute: "LotLinkUp — Rural land for sale, with financing",
   },
   description:
     "We buy raw land in good country and sell it direct, with seller financing built in. No banks, no realtors, no nonsense.",
   openGraph: {
-    title: "Lot Linkup — Rural land for sale, with financing",
+    title: "LotLinkUp — Rural land for sale, with financing",
     description:
       "We buy raw land in good country and sell it direct, with seller financing built in. No banks, no realtors, no nonsense.",
     type: "website",
-    siteName: "Lot Linkup",
+    siteName: "LotLinkUp",
     images: ["/images/hero-lake-texoma.jpg"],
   },
 };

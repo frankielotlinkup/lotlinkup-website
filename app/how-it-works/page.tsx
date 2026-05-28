@@ -5,7 +5,7 @@ import { Container } from "@/components/container";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "How seller financing works at Lot Linkup — no credit checks, low down payments, and a clear path to owning rural land.",
+    "How seller financing works at LotLinkUp — no credit checks, low down payments, and a clear path to owning rural land.",
 };
 
 const STEPS = [

@@ -63,7 +63,7 @@ export function ValueProps() {
     <section className="bg-paper py-16 md:py-24">
       <Container>
         <SectionTitle
-          eyebrow="WHY LOT LINKUP"
+          eyebrow="WHY LOTLINKUP"
           headline="Why buy land from us."
           align="center"
           variant="light"

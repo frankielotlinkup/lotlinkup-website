@@ -11,13 +11,13 @@ export function SiteFooter() {
           <div>
             <div className="inline-flex items-center gap-2 font-serif text-2xl font-normal tracking-[-0.01em] text-accent">
               <LogoMark size={28} />
-              <span>Lot Linkup</span>
+              <span>LotLinkUp</span>
             </div>
             <p className="type-body text-ink-soft mt-3 max-w-xs">
               Rural land, made accessible.
             </p>
             <p className="type-small text-ink-soft mt-6">
-              © {year} Lot Linkup. All rights reserved.
+              © {year} LotLinkUp. All rights reserved.
             </p>
           </div>
           <div>

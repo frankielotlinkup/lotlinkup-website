@@ -32,16 +32,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://lotlinkup-website.vercel.app"),
   title: {
-    default: "Lot Linkup — Rural land for sale, nationwide",
-    template: "%s · Lot Linkup",
+    default: "LotLinkUp — Rural land for sale, nationwide",
+    template: "%s · LotLinkUp",
   },
   description:
     "Rural land for sale, nationwide. Owner-financed lots across the United States.",
   openGraph: {
-    title: "Lot Linkup",
+    title: "LotLinkUp",
     description: "Rural land for sale, nationwide.",
     type: "website",
-    siteName: "Lot Linkup",
+    siteName: "LotLinkUp",
     images: ["/og.png"],
   },
 };

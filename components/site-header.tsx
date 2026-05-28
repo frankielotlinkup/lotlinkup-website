@@ -67,10 +67,10 @@ export function SiteHeader() {
           <Link
             href="/"
             className={`inline-flex items-center gap-2 font-serif text-2xl font-normal tracking-[-0.01em] transition-colors ${logoColor} ${navTextShadow}`}
-            aria-label="Lot Linkup home"
+            aria-label="LotLinkUp home"
           >
             <LogoMark size={28} />
-            <span>Lot Linkup</span>
+            <span>LotLinkUp</span>
           </Link>
           <nav
             className="hidden md:flex items-center gap-8"
@@ -131,7 +131,7 @@ export function SiteHeader() {
               onClick={() => setMenuOpen(false)}
             >
               <LogoMark size={28} />
-              <span>Lot Linkup</span>
+              <span>LotLinkUp</span>
             </Link>
             <button
               type="button"
