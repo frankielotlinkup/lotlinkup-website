@@ -62,12 +62,15 @@ export default async function ListingDetailPage({
   const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || null;
   const isFinanced = listing.financing_available === true;
 
-  const slides =
-    listing.gallery && listing.gallery.length > 0
-      ? listing.gallery
-      : listing.main_image
-        ? [listing.main_image]
-        : ["placeholder-1"];
+  // Lead with the chosen hero (main_image / pickHero), then the rest of the
+  // gallery. Without this, the detail hero was just gallery[0] in Drive's
+  // arbitrary order, ignoring the hero the sync picks.
+  const gallery = listing.gallery ?? [];
+  const slides = listing.main_image
+    ? [listing.main_image, ...gallery.filter((u) => u !== listing.main_image)]
+    : gallery.length > 0
+      ? gallery
+      : ["placeholder-1"];
 
   const place =
     listing.city && listing.state_code
