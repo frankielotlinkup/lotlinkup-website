@@ -184,10 +184,7 @@ async function syncPropertyFolder(
   supa: SupabaseClient,
   pf: drive_v3.Schema$File,
   stateName: FolderState,
-  report: {
-    updated: number;
-    unmatched: { folder: string; apn: string | null; slug: string }[];
-  }
+  report: SyncReport
 ) {
   const folderId = pf.id!;
   const folderName = pf.name!;
@@ -196,6 +193,24 @@ async function syncPropertyFolder(
   const mdFile = await findChildByName(drive, folderId, 'property-info.md');
   if (!mdFile) throw new Error('property-info.md not found');
   const mdText = await downloadFileText(drive, mdFile.id!);
+
+  // Combo listings ("- listing type: combo") carry three ## sections and three
+  // image subfolders; hand off to the combo path. Everything else is a normal
+  // single-lot folder and flows through unchanged below.
+  const sectioned = parseSections(mdText);
+  if ((sectioned.preamble['listing type'] || '').toLowerCase() === 'combo') {
+    await syncComboFolder(
+      drive,
+      supa,
+      folderId,
+      folderName,
+      stateName,
+      sectioned,
+      report,
+    );
+    return;
+  }
+
   const parsed = parsePropertyMd(mdText);
 
   // 2. Find Images/ subfolder and list images
@@ -256,6 +271,8 @@ async function syncPropertyFolder(
     buy_price: parsed.buy_price,
     main_image: heroUrl,
     gallery: galleryUrls,
+    listing_type: 'single',
+    variants: null,
     ...publishedFlags,
     date_listed: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -296,6 +313,158 @@ async function syncPropertyFolder(
   }
 }
 
+// ---------- per-combo sync ----------
+// A combo folder holds one property-info.md with a shared preamble + three
+// "## ..." sections (Both / Lot A / Lot B), plus three image subfolders
+// (Images-Both / Images-LotA / Images-LotB). We build one inventory row whose
+// top-level fields mirror the "both" option (so cards/SEO work), and store all
+// three options in `variants` for the on-page toggle.
+async function syncComboFolder(
+  drive: drive_v3.Drive,
+  supa: SupabaseClient,
+  folderId: string,
+  folderName: string,
+  stateName: FolderState,
+  sectioned: MdSections,
+  report: SyncReport,
+) {
+  const slug = slugify(folderName);
+  const shared = fieldsToProperty(sectioned.preamble);
+
+  const variants: SyncVariant[] = [];
+  for (const sec of sectioned.sections) {
+    const cls = classifyVariant(sec.title);
+    if (!cls) continue;
+    const f = sec.fields;
+
+    // Mirror this option's images into <slug>/<key>/… and pick its hero.
+    const imgFolder = await findChildByName(drive, folderId, cls.folder, true);
+    const imgs = imgFolder ? await listImageFiles(drive, imgFolder.id!) : [];
+    const mirrored: { name: string; url: string }[] = [];
+    for (const img of imgs) {
+      const url = await mirrorImage(drive, supa, img, slug, cls.key);
+      mirrored.push({ name: img.name!, url });
+    }
+    const heroUrl = pickHero(mirrored);
+    const gallery = mirrored
+      .filter((m) => m.url !== heroUrl)
+      .map((m) => m.url);
+
+    variants.push({
+      key: cls.key,
+      label: f['label'] || cls.defaultLabel,
+      acreage: numFrom(f, 'acres') ?? null,
+      cash_price: numFrom(f, 'cash price') ?? null,
+      finance_price: numFrom(f, 'financed price') ?? null,
+      financing_available: boolFrom(f, 'owner financing') ?? false,
+      down_payment: numFrom(f, 'down payment') ?? null,
+      monthly_payment: numFrom(f, 'monthly payment') ?? null,
+      term_months: numFrom(f, 'term months') ?? null,
+      interest_rate: numFrom(f, 'interest rate') ?? null,
+      apn: f['apn'] || null,
+      description: f['description'] || null,
+      lead_hook: f['lead hook'] || null,
+      main_image: heroUrl ?? null,
+      gallery,
+    });
+  }
+
+  const order: Record<string, number> = { both: 0, a: 1, b: 2 };
+  variants.sort((x, y) => (order[x.key] ?? 9) - (order[y.key] ?? 9));
+
+  const both = variants.find((v) => v.key === 'both') ?? variants[0];
+  if (!both) throw new Error('combo listing has no recognized lot sections');
+
+  const coords = shared.google_maps_url
+    ? await extractCoordsFromMapsUrl(shared.google_maps_url)
+    : null;
+
+  const publishedFlags = stateToFlags(stateName);
+  const row = {
+    slug,
+    drive_folder: folderId,
+    state: shared.state,
+    state_code: shared.state_code,
+    county: shared.county,
+    city: shared.city,
+    acreage: both.acreage ?? undefined,
+    apn: both.apn ?? undefined,
+    google_maps_url: shared.google_maps_url,
+    latitude: coords?.latitude ?? null,
+    longitude: coords?.longitude ?? null,
+    cash_price: both.cash_price ?? undefined,
+    finance_price: both.finance_price ?? undefined,
+    asking_price: both.cash_price ?? undefined,
+    financing_available: both.financing_available,
+    down_payment: both.down_payment ?? undefined,
+    monthly_payment: both.monthly_payment ?? undefined,
+    term_months: both.term_months ?? undefined,
+    interest_rate: both.interest_rate ?? undefined,
+    available_terms: buildAvailableTerms({
+      financing_available: both.financing_available,
+      down_payment: both.down_payment ?? undefined,
+      monthly_payment: both.monthly_payment ?? undefined,
+      term_months: both.term_months ?? undefined,
+      interest_rate: both.interest_rate ?? undefined,
+    }),
+    zoning: shared.zoning,
+    road_access: shared.road_access,
+    utilities: shared.utilities,
+    topography: shared.topography,
+    nearest_recreation: shared.nearest_recreation,
+    nearest_town: shared.nearest_town,
+    best_use_cases: shared.best_use_cases,
+    description: both.description ?? shared.description,
+    lead_hook: both.lead_hook ?? shared.lead_hook,
+    buy_price: shared.buy_price,
+    main_image: both.main_image,
+    gallery: both.gallery,
+    listing_type: 'combo',
+    variants,
+    ...publishedFlags,
+    date_listed: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  // Match the CRM row by any of the parcel APNs (a combo has two), then slug.
+  const apnCandidates = [
+    both.apn,
+    ...variants.filter((v) => v.key !== 'both').map((v) => v.apn),
+  ].filter((a): a is string => !!a);
+
+  let existing: { id: string } | null = null;
+  for (const apn of apnCandidates) {
+    const { data } = await supa
+      .from('inventory')
+      .select('id')
+      .eq('apn', apn)
+      .maybeSingle();
+    if (data) {
+      existing = data;
+      break;
+    }
+  }
+  if (!existing) {
+    const { data } = await supa
+      .from('inventory')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    existing = data;
+  }
+
+  if (existing) {
+    await supa.from('inventory').update(row).eq('id', existing.id);
+    report.updated++;
+  } else {
+    report.unmatched.push({
+      folder: folderName,
+      apn: apnCandidates[0] ?? null,
+      slug,
+    });
+  }
+}
+
 // ---------- folder state → flags ----------
 function stateToFlags(state: FolderState): {
   published: boolean;
@@ -312,8 +481,8 @@ function stateToFlags(state: FolderState): {
 }
 
 // ---------- markdown parser ----------
-function parsePropertyMd(md: string): ParsedProperty {
-  const lines = md.split(/\r?\n/);
+// Pull "- key: value" lines into a lowercased map. Blank / TBD values skipped.
+function extractFields(lines: string[]): Record<string, string> {
   const fields: Record<string, string> = {};
   for (const raw of lines) {
     const m = raw.match(/^\s*-\s*([^:]+):\s*(.*)$/);
@@ -323,40 +492,44 @@ function parsePropertyMd(md: string): ParsedProperty {
     if (val === '' || val === 'TBD') continue;
     fields[key] = val;
   }
+  return fields;
+}
 
-  const num = (k: string): number | undefined => {
-    const v = fields[k];
-    if (!v) return undefined;
-    const n = parseFloat(v.replace(/[^0-9.\-]/g, ''));
-    return Number.isFinite(n) ? n : undefined;
-  };
-  const bool = (k: string): boolean | undefined => {
-    const v = fields[k]?.toLowerCase();
-    if (v === 'yes' || v === 'true') return true;
-    if (v === 'no' || v === 'false') return false;
-    return undefined;
-  };
+function numFrom(fields: Record<string, string>, k: string): number | undefined {
+  const v = fields[k];
+  if (!v) return undefined;
+  const n = parseFloat(v.replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : undefined;
+}
 
+function boolFrom(fields: Record<string, string>, k: string): boolean | undefined {
+  const v = fields[k]?.toLowerCase();
+  if (v === 'yes' || v === 'true') return true;
+  if (v === 'no' || v === 'false') return false;
+  return undefined;
+}
+
+function fieldsToProperty(fields: Record<string, string>): ParsedProperty {
   return {
     state: fields['state'],
     state_code: fields['state code']?.toUpperCase(),
     county: fields['county'],
     city: fields['city'],
-    acreage: num('acres'),
+    acreage: numFrom(fields, 'acres'),
     apn: fields['apn'],
     google_maps_url: fields['maps link'],
-    cash_price: num('cash price'),
-    finance_price: num('financed price'),
-    financing_available: bool('owner financing'),
-    down_payment: num('down payment'),
-    monthly_payment: num('monthly payment'),
-    term_months: num('term months'),
-    interest_rate: num('interest rate'),
+    cash_price: numFrom(fields, 'cash price'),
+    finance_price: numFrom(fields, 'financed price'),
+    financing_available: boolFrom(fields, 'owner financing'),
+    down_payment: numFrom(fields, 'down payment'),
+    monthly_payment: numFrom(fields, 'monthly payment'),
+    term_months: numFrom(fields, 'term months'),
+    interest_rate: numFrom(fields, 'interest rate'),
     zoning: fields['zoning'],
     road_access: fields['road access'],
     utilities: fields['utilities'],
     notable: fields['notable'],
-    buy_price: num('purchase price'),
+    buy_price: numFrom(fields, 'purchase price'),
     topography: fields['terrain'],
     nearest_recreation: fields['nearest recreation'],
     nearest_town: fields['nearest town'],
@@ -365,6 +538,79 @@ function parsePropertyMd(md: string): ParsedProperty {
     lead_hook: fields['lead hook'],
   };
 }
+
+function parsePropertyMd(md: string): ParsedProperty {
+  return fieldsToProperty(extractFields(md.split(/\r?\n/)));
+}
+
+// Split a combo sheet into a shared preamble (before the first "## ..."
+// heading) plus one block per "## Section". Each block's "- key: value" lines
+// are extracted the same way as a single-lot sheet.
+type MdSections = {
+  preamble: Record<string, string>;
+  sections: { title: string; fields: Record<string, string> }[];
+};
+function parseSections(md: string): MdSections {
+  const lines = md.split(/\r?\n/);
+  const preamble: string[] = [];
+  const sections: { title: string; lines: string[] }[] = [];
+  let cur: { title: string; lines: string[] } | null = null;
+  for (const l of lines) {
+    const h = l.match(/^\s*#{2,}\s+(.*)$/);
+    if (h) {
+      cur = { title: h[1].trim(), lines: [] };
+      sections.push(cur);
+      continue;
+    }
+    if (cur) cur.lines.push(l);
+    else preamble.push(l);
+  }
+  return {
+    preamble: extractFields(preamble),
+    sections: sections.map((s) => ({
+      title: s.title,
+      fields: extractFields(s.lines),
+    })),
+  };
+}
+
+// Map a "## ..." section title to one of the three combo options and the
+// Drive image subfolder that holds its photos.
+function classifyVariant(
+  title: string,
+): { key: string; folder: string; defaultLabel: string } | null {
+  const t = title.toLowerCase();
+  if (t.includes('both') || t.includes('together'))
+    return { key: 'both', folder: 'Images-Both', defaultLabel: 'Both lots together' };
+  if (t.includes('lot a') || t.includes('lot-a'))
+    return { key: 'a', folder: 'Images-LotA', defaultLabel: 'Lot A' };
+  if (t.includes('lot b') || t.includes('lot-b'))
+    return { key: 'b', folder: 'Images-LotB', defaultLabel: 'Lot B' };
+  return null;
+}
+
+type SyncVariant = {
+  key: string;
+  label: string;
+  acreage: number | null;
+  cash_price: number | null;
+  finance_price: number | null;
+  financing_available: boolean;
+  down_payment: number | null;
+  monthly_payment: number | null;
+  term_months: number | null;
+  interest_rate: number | null;
+  apn: string | null;
+  description: string | null;
+  lead_hook: string | null;
+  main_image: string | null;
+  gallery: string[];
+};
+
+type SyncReport = {
+  updated: number;
+  unmatched: { folder: string; apn: string | null; slug: string }[];
+};
 
 function buildAvailableTerms(p: ParsedProperty): string | undefined {
   if (!p.financing_available) return undefined;
@@ -458,17 +704,20 @@ async function mirrorImage(
   drive: drive_v3.Drive,
   supa: SupabaseClient,
   img: drive_v3.Schema$File,
-  slug: string
+  slug: string,
+  subdir = ''
 ): Promise<string> {
-  // Use Drive md5 in path so changed files get a new URL (busts CDN cache)
+  // Use Drive md5 in path so changed files get a new URL (busts CDN cache).
+  // `subdir` namespaces a combo option's images (e.g. <slug>/a/…).
   const hash = (img.md5Checksum || crypto.randomBytes(4).toString('hex')).slice(0, 8);
   const safeName = img.name!.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `${slug}/${hash}-${safeName}`;
+  const dir = subdir ? `${slug}/${subdir}` : slug;
+  const path = `${dir}/${hash}-${safeName}`;
 
   // Skip re-upload if already there
   const { data: existing } = await supa.storage
     .from(SUPABASE_STORAGE_BUCKET)
-    .list(slug, { search: `${hash}-${safeName}` });
+    .list(dir, { search: `${hash}-${safeName}` });
   if (!existing?.find((f) => f.name === `${hash}-${safeName}`)) {
     const buf = await downloadFileBuffer(drive, img.id!);
     await supa.storage

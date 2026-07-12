@@ -41,6 +41,8 @@ const NULL_LISTING: Omit<PublicListing, "id"> = {
   date_listed: null,
   apn: null,
   available_terms: null,
+  listing_type: null,
+  variants: null,
 };
 
 const PLACEHOLDER_GALLERY = [
@@ -168,5 +170,99 @@ export const DEMO_LISTINGS: PublicListing[] = [
       "A waterfront half-acre on Lake Texoma with a sandy beach edge. Mobile homes are explicitly allowed in this community — no surprise zoning fights. Power and rural water reach the road, and a community septic system is available if you want to skip the install cost. Lake Texoma straddles the Texas–Oklahoma line and is one of the most popular boating lakes in the Southwest, so this also works as a short-term rental.",
     lead_hook: "Direct waterfront access. Sandy beach. Mobile homes allowed.",
     gallery: PLACEHOLDER_GALLERY,
+  },
+  {
+    // Combo sample — two side-by-side lots, buy both or either one.
+    // The row-level fields mirror the "both" variant so the listing card and
+    // SEO have sensible defaults; the page reads `variants` for the toggle.
+    ...NULL_LISTING,
+    id: "demo-combo-1",
+    slug: "demo-2-lot-combo-cherokee-al",
+    acreage: 2.0,
+    county: "Cherokee County",
+    city: "Centre",
+    state: "Alabama",
+    state_code: "AL",
+    latitude: 34.1512,
+    longitude: -85.6788,
+    financing_available: true,
+    cash_price: 24900,
+    finance_price: 27900,
+    down_payment: 500,
+    monthly_payment: 312,
+    term_months: 84,
+    interest_rate: 9.9,
+    available_terms: "60,72,84",
+    road_access: "County dirt road, year-round access",
+    utilities: "Power at the road; well and septic country lots",
+    topography: "Level near the road, gentle slope to a wooded back line",
+    nearest_recreation:
+      "20 minutes to Weiss Lake — 'the Crappie Capital of the World'",
+    nearest_town: "12 minutes to Centre · 90 minutes to Atlanta",
+    best_use_cases:
+      "Build site, Mobile home, Weekend cabin, Hunting retreat, Investment hold",
+    description:
+      "Two adjoining one-acre lots on a quiet county road in Cherokee County, minutes from Weiss Lake. Buy both for a full two-acre homesite with room for a house and a shop, or pick up just one. Level building spots near the road, mature hardwoods along the back.",
+    lead_hook:
+      "Two adjoining lots near Weiss Lake — buy both for a 2-acre homesite or grab just one.",
+    gallery: PLACEHOLDER_GALLERY,
+    listing_type: "combo",
+    variants: [
+      {
+        key: "both",
+        label: "Both lots together",
+        acreage: 2.0,
+        cash_price: 24900,
+        finance_price: 27900,
+        financing_available: true,
+        down_payment: 500,
+        monthly_payment: 312,
+        term_months: 84,
+        interest_rate: 9.9,
+        apn: "12-345 + 12-346",
+        description:
+          "Both adjoining lots sold together as one 2.0-acre parcel. Combine them for a bigger homesite, more privacy, or room for a shop plus a house. Best value of the three options — you save versus buying the lots one at a time.",
+        lead_hook:
+          "Two adjoining lots near Weiss Lake — buy both for a 2-acre homesite or grab just one.",
+        main_image: "placeholder-1",
+        gallery: ["placeholder-1", "placeholder-2", "placeholder-3"],
+      },
+      {
+        key: "a",
+        label: "Lot A",
+        acreage: 1.0,
+        cash_price: 14900,
+        finance_price: 16900,
+        financing_available: true,
+        down_payment: 300,
+        monthly_payment: 199,
+        term_months: 84,
+        interest_rate: 9.9,
+        apn: "12-345",
+        description:
+          "Lot A on its own — 1.0 acre with direct road frontage. Level building spot near the front, gentle slope toward the back tree line.",
+        lead_hook: null,
+        main_image: "placeholder-2",
+        gallery: ["placeholder-2", "placeholder-4"],
+      },
+      {
+        key: "b",
+        label: "Lot B",
+        acreage: 1.0,
+        cash_price: 14900,
+        finance_price: 16900,
+        financing_available: true,
+        down_payment: 300,
+        monthly_payment: 199,
+        term_months: 84,
+        interest_rate: 9.9,
+        apn: "12-346",
+        description:
+          "Lot B on its own — 1.0 acre, more wooded and private. Good for a weekend cabin or a hunting setup tucked off the road.",
+        lead_hook: null,
+        main_image: "placeholder-3",
+        gallery: ["placeholder-3", "placeholder-4"],
+      },
+    ],
   },
 ];

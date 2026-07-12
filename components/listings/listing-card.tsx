@@ -32,6 +32,22 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
     listing.lead_hook ??
     (listing.description ? truncate(listing.description) : null);
 
+  // Combo (two side-by-side lots): show "From $<cheapest single lot>" with a
+  // tag, so buyers see the low entry point and discover the options on-page.
+  const isCombo =
+    listing.listing_type === "combo" &&
+    Array.isArray(listing.variants) &&
+    listing.variants.length > 0;
+  const singleCashPrices = isCombo
+    ? listing
+        .variants!.filter((v) => v.key !== "both")
+        .map((v) => v.cash_price)
+        .filter((n): n is number => n != null)
+    : [];
+  const fromPrice = singleCashPrices.length
+    ? Math.min(...singleCashPrices)
+    : listing.cash_price ?? 0;
+
   return (
     <Link
       href={`/listings/${slug}`}
@@ -52,7 +68,12 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
             <div className="absolute inset-0 bg-gradient-to-br from-ink-charcoal to-accent-deep" />
           )}
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/15 to-transparent" />
-          <div className="absolute left-3 top-3">
+          <div className="absolute left-3 top-3 flex gap-2">
+            {isCombo && (
+              <span className="inline-block rounded-sm bg-accent px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white">
+                2 Lots
+              </span>
+            )}
             {isFinanced ? (
               <span className="inline-block rounded-sm bg-paper px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-ink">
                 Owner Financed
@@ -71,7 +92,11 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
             {locationLabel(listing) || "Location TBD"}
           </p>
 
-          {isFinanced ? (
+          {isCombo ? (
+            <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
+              From ${formatNumber(fromPrice)}
+            </p>
+          ) : isFinanced ? (
             <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
               $
               {formatNumber(
@@ -96,9 +121,11 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
           )}
 
           <p className="mb-4 text-[13px] text-muted">
-            {isFinanced
-              ? `$${formatNumber(listing.down_payment ?? 0)} down · Cash $${formatNumber(listing.cash_price ?? 0)}${listing.finance_price != null ? ` · Finance $${formatNumber(listing.finance_price)}` : ""}`
-              : "Cash sale"}
+            {isCombo
+              ? "2 lots · buy together or separately"
+              : isFinanced
+                ? `$${formatNumber(listing.down_payment ?? 0)} down · Cash $${formatNumber(listing.cash_price ?? 0)}${listing.finance_price != null ? ` · Finance $${formatNumber(listing.finance_price)}` : ""}`
+                : "Cash sale"}
           </p>
 
           {summary && (

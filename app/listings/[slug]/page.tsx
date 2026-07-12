@@ -14,6 +14,7 @@ import { HowFinancingWorks } from "@/components/listings/detail/how-financing-wo
 import { Testimonials } from "@/components/listings/detail/testimonials";
 import { LeadForm } from "@/components/listings/detail/lead-form";
 import { FinalCtaStrip } from "@/components/listings/detail/final-cta-strip";
+import { ComboHero } from "@/components/listings/detail/combo-hero";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -62,6 +63,16 @@ export default async function ListingDetailPage({
   const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || null;
   const isFinanced = listing.financing_available === true;
 
+  // Combo = two side-by-side lots with a buy-both / buy-A / buy-B toggle.
+  const isCombo =
+    listing.listing_type === "combo" &&
+    Array.isArray(listing.variants) &&
+    listing.variants.length > 0;
+  // "How financing works" shows if any purchasable option offers financing.
+  const anyFinanced = isCombo
+    ? listing.variants!.some((v) => v.financing_available)
+    : isFinanced;
+
   // Lead with the chosen hero (main_image / pickHero), then the rest of the
   // gallery. Without this, the detail hero was just gallery[0] in Drive's
   // arbitrary order, ignoring the hero the sync picks.
@@ -82,40 +93,53 @@ export default async function ListingDetailPage({
 
   return (
     <div className="bg-paper pb-16 lg:pb-24">
-      {/* Gallery hero */}
-      <div className="bg-paper py-8 md:py-12">
-        <Container size="wide">
-          <Gallery
-            slides={slides}
-            badge={isFinanced ? "OWNER FINANCED" : "PREMIUM"}
-          />
-        </Container>
-      </div>
-
-      {/* Title block */}
-      <Container>
-        <div className="pt-4 md:pt-8">
-          <TitleBlock listing={listing} phone={phone} />
-        </div>
-
-        {/* About */}
-        <div className="mt-16 md:mt-24">
-          <AboutSection listing={listing} />
-        </div>
-
-        {/* Calculator (financed only) */}
-        {isFinanced && listing.cash_price != null && (
-          <div className="mt-16 md:mt-24">
-            <FinancingCalculator
-              financePrice={listing.finance_price ?? listing.cash_price}
-              cashPrice={listing.cash_price}
-              minDownPayment={listing.down_payment ?? 0}
-              defaultTermMonths={listing.term_months ?? 60}
-              annualRate={listing.interest_rate ?? 0}
-            />
+      {isCombo ? (
+        /* Combo: interactive buy-both / buy-A / buy-B hero (gallery, title,
+           about, and calculator all swap with the selected lot option). */
+        <ComboHero
+          base={listing}
+          variants={listing.variants!}
+          phone={phone}
+        />
+      ) : (
+        <>
+          {/* Gallery hero */}
+          <div className="bg-paper py-8 md:py-12">
+            <Container size="wide">
+              <Gallery
+                slides={slides}
+                badge={isFinanced ? "OWNER FINANCED" : "PREMIUM"}
+              />
+            </Container>
           </div>
-        )}
 
+          {/* Title block + About + Calculator */}
+          <Container>
+            <div className="pt-4 md:pt-8">
+              <TitleBlock listing={listing} phone={phone} />
+            </div>
+
+            <div className="mt-16 md:mt-24">
+              <AboutSection listing={listing} />
+            </div>
+
+            {isFinanced && listing.cash_price != null && (
+              <div className="mt-16 md:mt-24">
+                <FinancingCalculator
+                  financePrice={listing.finance_price ?? listing.cash_price}
+                  cashPrice={listing.cash_price}
+                  minDownPayment={listing.down_payment ?? 0}
+                  defaultTermMonths={listing.term_months ?? 60}
+                  annualRate={listing.interest_rate ?? 0}
+                />
+              </div>
+            )}
+          </Container>
+        </>
+      )}
+
+      {/* Shared sections (same for single + combo) */}
+      <Container>
         {/* Location */}
         <div className="mt-16 md:mt-24">
           <LocationSection listing={listing} />
@@ -128,8 +152,8 @@ export default async function ListingDetailPage({
           </div>
         )}
 
-        {/* How financing works (financed only) */}
-        {isFinanced && (
+        {/* How financing works (shown if any option is financed) */}
+        {anyFinanced && (
           <div className="mt-16 md:mt-24">
             <HowFinancingWorks />
           </div>

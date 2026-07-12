@@ -22,6 +22,28 @@ function normalizeListing(row: PublicListing): PublicListing {
   };
 }
 
+// One selectable option on a combo (two-lots-side-by-side) listing. The
+// listing row still renders as a single page; the page shows a toggle that
+// swaps these variants. `key` is 'both' | 'a' | 'b'; 'both' is always first
+// and is the default selection.
+export type ListingVariant = {
+  key: string;
+  label: string;
+  acreage: number | null;
+  cash_price: number | null;
+  finance_price: number | null;
+  financing_available: boolean;
+  down_payment: number | null;
+  monthly_payment: number | null;
+  term_months: number | null;
+  interest_rate: number | null;
+  apn: string | null;
+  description: string | null;
+  lead_hook: string | null;
+  main_image: string | null;
+  gallery: string[];
+};
+
 export type PublicListing = {
   id: string;
   slug: string | null;
@@ -53,6 +75,10 @@ export type PublicListing = {
   date_listed: string | null;
   apn: string | null;
   available_terms: string | null;
+  // 'single' (or null) renders as today. 'combo' means two side-by-side lots
+  // with a buy-both / buy-A / buy-B toggle driven by `variants`.
+  listing_type: string | null;
+  variants: ListingVariant[] | null;
 };
 
 const PUBLIC_COLUMNS = [
@@ -86,6 +112,8 @@ const PUBLIC_COLUMNS = [
   "date_listed",
   "apn",
   "available_terms",
+  "listing_type",
+  "variants",
 ].join(",");
 
 function getEnv(): { url: string; anonKey: string } {
@@ -116,21 +144,30 @@ async function pgrstGet(path: string): Promise<unknown> {
   return res.json();
 }
 
+const isDemo = () => process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1";
+
 export async function getPublishedListings(): Promise<PublicListing[]> {
   const select = encodeURIComponent(PUBLIC_COLUMNS);
-  const rows = (await pgrstGet(
-    `inventory?select=${select}&published=is.true`,
-  )) as PublicListing[];
+  let real: PublicListing[] = [];
+  try {
+    const rows = (await pgrstGet(
+      `inventory?select=${select}&published=is.true`,
+    )) as PublicListing[];
+    real = rows.map(normalizeListing);
+    real.sort((a, b) => {
+      const ad = a.date_listed ?? "";
+      const bd = b.date_listed ?? "";
+      return bd.localeCompare(ad);
+    });
+  } catch (e) {
+    // In demo/preview mode, still render the demo listings even if the live
+    // inventory fetch fails (e.g. the combo columns aren't migrated yet).
+    // Real production (demo off) rethrows so failures stay loud.
+    if (!isDemo()) throw e;
+    console.warn("[listings] live fetch failed; demo data only:", e);
+  }
 
-  const real = rows.map(normalizeListing);
-
-  real.sort((a, b) => {
-    const ad = a.date_listed ?? "";
-    const bd = b.date_listed ?? "";
-    return bd.localeCompare(ad);
-  });
-
-  if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
+  if (isDemo()) {
     return [...real, ...DEMO_LISTINGS];
   }
 
@@ -142,13 +179,17 @@ export async function getListingBySlug(
 ): Promise<PublicListing | null> {
   const select = encodeURIComponent(PUBLIC_COLUMNS);
   const slugParam = encodeURIComponent(slug);
-  const rows = (await pgrstGet(
-    `inventory?select=${select}&slug=eq.${slugParam}&published=is.true&limit=1`,
-  )) as PublicListing[];
+  try {
+    const rows = (await pgrstGet(
+      `inventory?select=${select}&slug=eq.${slugParam}&published=is.true&limit=1`,
+    )) as PublicListing[];
+    if (rows.length > 0) return normalizeListing(rows[0]);
+  } catch (e) {
+    if (!isDemo()) throw e;
+    console.warn("[listings] live fetch failed; demo data only:", e);
+  }
 
-  if (rows.length > 0) return normalizeListing(rows[0]);
-
-  if (process.env.NEXT_PUBLIC_LOTLINKUP_DEMO === "1") {
+  if (isDemo()) {
     const demo = DEMO_LISTINGS.find((l) => l.slug === slug);
     if (demo) return demo;
   }
