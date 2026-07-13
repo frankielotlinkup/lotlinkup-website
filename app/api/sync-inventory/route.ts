@@ -706,7 +706,10 @@ async function findChildByName(
     : `mimeType != 'application/vnd.google-apps.folder'`;
   const res = await drive.files.list({
     q: `'${parentId}' in parents and name = '${name.replace(/'/g, "\\'")}' and ${mime} and trashed = false`,
-    fields: 'files(id, name, mimeType)',
+    fields: 'files(id, name, mimeType, modifiedTime)',
+    // Prefer the most recently modified match, so an updated property-info.md
+    // wins if a folder ends up with more than one.
+    orderBy: 'modifiedTime desc',
     pageSize: 1,
   });
   return res.data.files?.[0];
