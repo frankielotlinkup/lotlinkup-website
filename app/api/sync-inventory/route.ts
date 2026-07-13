@@ -226,7 +226,7 @@ async function syncPropertyFolder(
   const mirrored: { name: string; url: string }[] = [];
   for (const img of images) {
     const url = await mirrorImage(drive, supa, img, slug);
-    mirrored.push({ name: img.name!, url });
+    if (url) mirrored.push({ name: img.name!, url });
   }
   const heroUrl = pickHero(mirrored);
   const galleryUrls = mirrored
@@ -342,7 +342,7 @@ async function syncComboFolder(
     const mirrored: { name: string; url: string }[] = [];
     for (const img of imgs) {
       const url = await mirrorImage(drive, supa, img, slug, cls.key);
-      mirrored.push({ name: img.name!, url });
+      if (url) mirrored.push({ name: img.name!, url });
     }
     const heroUrl = pickHero(mirrored);
     const gallery = mirrored
@@ -715,7 +715,7 @@ async function findChildByName(
 async function listImageFiles(drive: drive_v3.Drive, folderId: string) {
   const res = await drive.files.list({
     q: `'${folderId}' in parents and (mimeType contains 'image/') and trashed = false`,
-    fields: 'files(id, name, mimeType, md5Checksum)',
+    fields: 'files(id, name, mimeType, md5Checksum, size)',
     pageSize: 1000,
   });
   return res.data.files || [];
@@ -738,13 +738,22 @@ async function downloadFileBuffer(drive: drive_v3.Drive, fileId: string) {
 }
 
 // ---------- image mirror ----------
+// Storage rejects files over the bucket's per-file limit; Andrew's 360
+// panoramas run 90–130MB. Skip anything this large so an oversized file can't
+// (a) blow the sync's time budget downloading it or (b) upload-fail and become
+// a broken hero/gallery image.
+const MAX_IMAGE_BYTES = 45 * 1024 * 1024;
+
+// Returns the public URL, or null if the image was skipped/failed to upload
+// (callers must drop nulls rather than store a URL that 404s).
 async function mirrorImage(
   drive: drive_v3.Drive,
   supa: SupabaseClient,
   img: drive_v3.Schema$File,
   slug: string,
   subdir = ''
-): Promise<string> {
+): Promise<string | null> {
+  if (Number(img.size || 0) > MAX_IMAGE_BYTES) return null;
   // Use Drive md5 in path so changed files get a new URL (busts CDN cache).
   // `subdir` namespaces a combo option's images (e.g. <slug>/a/…).
   const hash = (img.md5Checksum || crypto.randomBytes(4).toString('hex')).slice(0, 8);
@@ -758,12 +767,15 @@ async function mirrorImage(
     .list(dir, { search: `${hash}-${safeName}` });
   if (!existing?.find((f) => f.name === `${hash}-${safeName}`)) {
     const buf = await downloadFileBuffer(drive, img.id!);
-    await supa.storage
+    const { error } = await supa.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .upload(path, buf, {
         contentType: img.mimeType || 'image/jpeg',
         upsert: true,
       });
+    // Upload rejected (e.g. still too large) — drop it instead of returning a
+    // URL that resolves to nothing.
+    if (error) return null;
   }
 
   const { data } = supa.storage
