@@ -19,14 +19,19 @@ export function computeMonthlyPayment({
 }): number {
   const price = financePrice ?? cashPrice ?? 0;
   const down = downPayment ?? 0;
-  const term = termMonths ?? 0;
+  // Guard against absurd/garbled term values (e.g. a "24, 36, 48" sheet entry
+  // misparsed into 243648) that would overflow the amortization exponent and
+  // render "$NaN". Clamp to a sane 50-year ceiling.
+  const term = Math.min(Math.max(0, termMonths ?? 0), 600);
   const rate = annualRate ?? 0;
   const principal = Math.max(0, price - down);
   if (principal === 0 || term <= 0) return 0;
   const monthlyRate = rate / 12 / 100;
   if (monthlyRate === 0) return principal / term;
   const factor = Math.pow(1 + monthlyRate, term);
-  return (principal * monthlyRate * factor) / (factor - 1);
+  if (!Number.isFinite(factor) || factor <= 1) return principal / term;
+  const payment = (principal * monthlyRate * factor) / (factor - 1);
+  return Number.isFinite(payment) ? payment : 0;
 }
 
 // Standard offered terms; the calculator surfaces only those ≤ the listing's

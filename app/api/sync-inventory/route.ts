@@ -358,7 +358,7 @@ async function syncComboFolder(
       financing_available: boolFrom(f, 'owner financing') ?? false,
       down_payment: numFrom(f, 'down payment') ?? null,
       monthly_payment: numFrom(f, 'monthly payment') ?? null,
-      term_months: numFrom(f, 'term months') ?? null,
+      term_months: maxTermFrom(f, 'term months') ?? null,
       interest_rate: numFrom(f, 'interest rate') ?? null,
       apn: f['apn'] || null,
       description: f['description'] || null,
@@ -508,6 +508,21 @@ function boolFrom(fields: Record<string, string>, k: string): boolean | undefine
   return undefined;
 }
 
+// Term fields often list several offered lengths ("24, 36, 48"). numFrom would
+// mash those digits into 243648; instead take the largest as the listing's
+// term_months (the calculator then offers every standard term up to it).
+function maxTermFrom(
+  fields: Record<string, string>,
+  k: string,
+): number | undefined {
+  const v = fields[k];
+  if (!v) return undefined;
+  const nums = (v.match(/\d+(?:\.\d+)?/g) || [])
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
+  return nums.length ? Math.max(...nums) : undefined;
+}
+
 function fieldsToProperty(fields: Record<string, string>): ParsedProperty {
   return {
     state: fields['state'],
@@ -522,7 +537,7 @@ function fieldsToProperty(fields: Record<string, string>): ParsedProperty {
     financing_available: boolFrom(fields, 'owner financing'),
     down_payment: numFrom(fields, 'down payment'),
     monthly_payment: numFrom(fields, 'monthly payment'),
-    term_months: numFrom(fields, 'term months'),
+    term_months: maxTermFrom(fields, 'term months'),
     interest_rate: numFrom(fields, 'interest rate'),
     zoning: fields['zoning'],
     road_access: fields['road access'],
