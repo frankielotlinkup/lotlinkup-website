@@ -198,14 +198,16 @@ async function syncPropertyFolder(
   // image subfolders; hand off to the combo path. Everything else is a normal
   // single-lot folder and flows through unchanged below.
   const sectioned = parseSections(mdText);
-  if ((sectioned.preamble['listing type'] || '').toLowerCase() === 'combo') {
+  const { sharedFields, variantSections } = splitCombo(sectioned);
+  if ((sharedFields['listing type'] || '').toLowerCase() === 'combo') {
     await syncComboFolder(
       drive,
       supa,
       folderId,
       folderName,
       stateName,
-      sectioned,
+      sharedFields,
+      variantSections,
       report,
     );
     return;
@@ -325,18 +327,15 @@ async function syncComboFolder(
   folderId: string,
   folderName: string,
   stateName: FolderState,
-  sectioned: MdSections,
+  sharedFields: Record<string, string>,
+  variantSections: VariantSection[],
   report: SyncReport,
 ) {
   const slug = slugify(folderName);
-  const shared = fieldsToProperty(sectioned.preamble);
+  const shared = fieldsToProperty(sharedFields);
 
   const variants: SyncVariant[] = [];
-  for (const sec of sectioned.sections) {
-    const cls = classifyVariant(sec.title);
-    if (!cls) continue;
-    const f = sec.fields;
-
+  for (const { cls, fields: f } of variantSections) {
     // Mirror this option's images into <slug>/<key>/… and pick its hero.
     const imgFolder = await findChildByName(drive, folderId, cls.folder, true);
     const imgs = imgFolder ? await listImageFiles(drive, imgFolder.id!) : [];
@@ -587,6 +586,30 @@ function classifyVariant(
   if (t.includes('lot b') || t.includes('lot-b'))
     return { key: 'b', folder: 'Images-LotB', defaultLabel: 'Lot B' };
   return null;
+}
+
+type VariantSection = {
+  cls: { key: string; folder: string; defaultLabel: string };
+  fields: Record<string, string>;
+};
+
+// Separate a combo sheet's "## Both / ## Lot A / ## Lot B" sections (the toggle
+// options) from every other "## …" section (INTAKE, ACQUISITION, LISTING
+// DETAILS, etc.), folding those non-variant sections plus the preamble into one
+// shared field map. This lets a combo sheet use the same section layout as the
+// normal single-lot template.
+function splitCombo(sectioned: MdSections): {
+  sharedFields: Record<string, string>;
+  variantSections: VariantSection[];
+} {
+  const sharedFields: Record<string, string> = { ...sectioned.preamble };
+  const variantSections: VariantSection[] = [];
+  for (const sec of sectioned.sections) {
+    const cls = classifyVariant(sec.title);
+    if (cls) variantSections.push({ cls, fields: sec.fields });
+    else Object.assign(sharedFields, sec.fields);
+  }
+  return { sharedFields, variantSections };
 }
 
 type SyncVariant = {
