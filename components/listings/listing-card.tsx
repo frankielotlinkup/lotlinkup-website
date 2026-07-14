@@ -38,12 +38,30 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
     listing.listing_type === "combo" &&
     Array.isArray(listing.variants) &&
     listing.variants.length > 0;
-  const singleCashPrices = isCombo
-    ? listing
-        .variants!.filter((v) => v.key !== "both")
-        .map((v) => v.cash_price)
-        .filter((n): n is number => n != null)
+  const singleVariants = isCombo
+    ? listing.variants!.filter((v) => v.key !== "both")
     : [];
+  const comboFinanced = singleVariants.some((v) => v.financing_available);
+  // For a financed combo, lead with the cheapest single-lot monthly payment so
+  // the card matches the other owner-financed listings.
+  const singleMonthlies = singleVariants
+    .filter((v) => v.financing_available)
+    .map((v) =>
+      Math.round(
+        computeMonthlyPayment({
+          financePrice: v.finance_price,
+          cashPrice: v.cash_price,
+          downPayment: v.down_payment,
+          termMonths: v.term_months,
+          annualRate: v.interest_rate,
+        }),
+      ),
+    )
+    .filter((n) => n > 0);
+  const fromMonthly = singleMonthlies.length ? Math.min(...singleMonthlies) : 0;
+  const singleCashPrices = singleVariants
+    .map((v) => v.cash_price)
+    .filter((n): n is number => n != null);
   const fromPrice = singleCashPrices.length
     ? Math.min(...singleCashPrices)
     : listing.cash_price ?? 0;
@@ -93,9 +111,18 @@ export function ListingCard({ listing }: { listing: PublicListing }) {
           </p>
 
           {isCombo ? (
-            <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
-              From ${formatNumber(fromPrice)}
-            </p>
+            comboFinanced && fromMonthly > 0 ? (
+              <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
+                From ${formatNumber(fromMonthly)}
+                <span className="ml-1 text-[18px] font-normal text-ink-soft">
+                  /mo
+                </span>
+              </p>
+            ) : (
+              <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
+                From ${formatNumber(fromPrice)}
+              </p>
+            )
           ) : isFinanced ? (
             <p className="mb-1 font-serif text-[30px] font-bold leading-tight text-ink md:text-[36px]">
               $

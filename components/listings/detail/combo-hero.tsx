@@ -7,6 +7,7 @@ import { Gallery } from "./gallery";
 import { TitleBlock } from "./title-block";
 import { AboutSection } from "./about-section";
 import { FinancingCalculator } from "./financing-calculator";
+import { computeMonthlyPayment } from "@/lib/financing";
 
 // Overlay the selected variant onto the base listing so we can reuse the
 // existing (variant-unaware) TitleBlock / AboutSection / Gallery / calculator
@@ -82,6 +83,16 @@ export function ComboHero({
             >
               {variants.map((v, i) => {
                 const active = i === idx;
+                const vFinanced = v.financing_available === true;
+                const vMonthly = Math.round(
+                  computeMonthlyPayment({
+                    financePrice: v.finance_price,
+                    cashPrice: v.cash_price,
+                    downPayment: v.down_payment,
+                    termMonths: v.term_months,
+                    annualRate: v.interest_rate,
+                  }),
+                );
                 return (
                   <button
                     key={v.key}
@@ -98,7 +109,9 @@ export function ComboHero({
                     <span className="block text-sm font-medium">{v.label}</span>
                     <span className="block text-[13px] text-muted">
                       {v.acreage != null ? `${v.acreage} ac · ` : ""}
-                      {money(v.cash_price)}
+                      {vFinanced && vMonthly > 0
+                        ? `$${vMonthly.toLocaleString("en-US")}/mo`
+                        : money(v.cash_price)}
                     </span>
                   </button>
                 );
