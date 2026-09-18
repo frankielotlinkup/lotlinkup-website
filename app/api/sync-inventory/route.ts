@@ -95,6 +95,7 @@ export async function POST(req: Request) {
     archived: 0,
     unmatched: [] as { folder: string; apn: string | null; slug: string }[],
     price_kept_from_crm: [] as { folder: string; drive_price: number; crm_price: number }[],
+    kept_sold_in_crm: [] as { folder: string; drive_state: FolderState }[],
     errors: [] as { folder: string; error: string }[],
     seen_folder_ids: [] as string[],
   };
@@ -136,6 +137,31 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json(report);
+}
+
+// ---------- CRM-owned sold status ----------
+// Marking a lot sold in the CRM is final. If its Drive folder hasn't been
+// moved to Sold/ yet, the sync must not flip it back to owned/pending or
+// republish it — keep it sold and hidden, and report the folder so someone
+// moves it.
+async function keepCrmSold(
+  supa: SupabaseClient,
+  inventoryId: string,
+  row: { status: string; published: boolean },
+  folderName: string,
+  stateName: FolderState,
+  report: SyncReport,
+) {
+  if (stateName === 'Sold') return;
+  const { data } = await supa
+    .from('inventory')
+    .select('status')
+    .eq('id', inventoryId)
+    .maybeSingle();
+  if (data?.status !== 'sold') return;
+  row.status = 'sold';
+  row.published = false;
+  report.kept_sold_in_crm.push({ folder: folderName, drive_state: stateName });
 }
 
 // ---------- CRM-owned price ----------
@@ -367,6 +393,7 @@ async function syncPropertyFolder(
   }
 
   if (existing) {
+    await keepCrmSold(supa, existing.id, row, folderName, stateName, report);
     const kept = await crmOwnedPrice(supa, existing.id, parsed.cash_price, mdFile.modifiedTime);
     if (kept != null && parsed.cash_price != null) {
       row.cash_price = kept;
@@ -527,6 +554,7 @@ async function syncComboFolder(
   }
 
   if (existing) {
+    await keepCrmSold(supa, existing.id, row, folderName, stateName, report);
     const driveCash = both.cash_price ?? undefined;
     const kept = await crmOwnedPrice(supa, existing.id, driveCash, mdModifiedTime);
     if (kept != null && driveCash != null) {
@@ -736,6 +764,7 @@ type SyncReport = {
   updated: number;
   unmatched: { folder: string; apn: string | null; slug: string }[];
   price_kept_from_crm: { folder: string; drive_price: number; crm_price: number }[];
+  kept_sold_in_crm: { folder: string; drive_state: FolderState }[];
 };
 
 function buildAvailableTerms(p: ParsedProperty): string | undefined {
