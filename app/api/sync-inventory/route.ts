@@ -94,6 +94,7 @@ export async function POST(req: Request) {
     updated: 0,
     archived: 0,
     unmatched: [] as { folder: string; apn: string | null; slug: string }[],
+    price_kept_from_crm: [] as { folder: string; drive_price: number; crm_price: number }[],
     errors: [] as { folder: string; error: string }[],
     seen_folder_ids: [] as string[],
   };
@@ -135,6 +136,70 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json(report);
+}
+
+// ---------- CRM-owned price ----------
+// Once a price is changed in the CRM (a price-review drop or an edit), the CRM
+// owns it: a Drive sheet that still carries an older price must not revert the
+// live listing. Drive wins again only when the sheet was edited AFTER the
+// CRM's last change and shows a price we've never listed at (a deliberate new
+// price, not a stale one). Returns the price to keep, or null to let Drive win.
+async function crmOwnedPrice(
+  supa: SupabaseClient,
+  inventoryId: string,
+  driveCash: number | null | undefined,
+  driveModifiedTime: string | null | undefined,
+): Promise<number | null> {
+  if (driveCash == null) return null;
+
+  const { data: current, error } = await supa
+    .from('inventory')
+    .select('cash_price, asking_price')
+    .eq('id', inventoryId)
+    .maybeSingle();
+  if (error || !current) return null;
+  const crmPrice: number | null = current.cash_price ?? current.asking_price ?? null;
+  if (crmPrice == null || Number(crmPrice) === driveCash) return null;
+
+  // Price history lives in the CRM's property_price_history table. If it isn't
+  // there yet (migration not run), behave exactly as before: Drive wins.
+  const { data: history, error: historyError } = await supa
+    .from('property_price_history')
+    .select('price, previous_price, changed_at, change_reason, changed_by')
+    .eq('inventory_id', inventoryId)
+    .order('changed_at', { ascending: true });
+  if (historyError || !history) return null;
+
+  const crmChanges = history.filter(
+    (h) => h.change_reason !== 'initial' && h.changed_by !== 'Drive sync / admin',
+  );
+  if (crmChanges.length === 0) return null;
+
+  const lastCrmChange = new Date(crmChanges[crmChanges.length - 1].changed_at).getTime();
+  const sheetEditedAfter =
+    !!driveModifiedTime && new Date(driveModifiedTime).getTime() > lastCrmChange;
+  const pastPrices = new Set<number>();
+  for (const h of history) {
+    pastPrices.add(Number(h.price));
+    if (h.previous_price != null) pastPrices.add(Number(h.previous_price));
+  }
+  const driveIsStale = pastPrices.has(driveCash);
+
+  if (sheetEditedAfter && !driveIsStale) return null;
+  return Number(crmPrice);
+}
+
+// Replaces the Drive sheet's cash figure in listing copy ("Cash price $26,000
+// or …") with the price being kept, so the page never shows two prices.
+function swapPrice(
+  text: string | null | undefined,
+  from: number,
+  to: number,
+  financePrice: number | null | undefined,
+): string | undefined {
+  if (!text) return text ?? undefined;
+  if (from === financePrice) return text;
+  return text.split(`$${from.toLocaleString('en-US')}`).join(`$${to.toLocaleString('en-US')}`);
 }
 
 // ---------- maps URL → coordinates ----------
@@ -209,6 +274,7 @@ async function syncPropertyFolder(
       sharedFields,
       variantSections,
       report,
+      mdFile.modifiedTime ?? null,
     );
     return;
   }
@@ -301,6 +367,13 @@ async function syncPropertyFolder(
   }
 
   if (existing) {
+    const kept = await crmOwnedPrice(supa, existing.id, parsed.cash_price, mdFile.modifiedTime);
+    if (kept != null && parsed.cash_price != null) {
+      row.cash_price = kept;
+      row.asking_price = kept;
+      row.description = swapPrice(row.description, parsed.cash_price, kept, parsed.finance_price);
+      report.price_kept_from_crm.push({ folder: folderName, drive_price: parsed.cash_price, crm_price: kept });
+    }
     await supa.from('inventory').update(row).eq('id', existing.id);
     report.updated++;
   } else {
@@ -330,6 +403,7 @@ async function syncComboFolder(
   sharedFields: Record<string, string>,
   variantSections: VariantSection[],
   report: SyncReport,
+  mdModifiedTime: string | null,
 ) {
   const slug = slugify(folderName);
   const shared = fieldsToProperty(sharedFields);
@@ -453,6 +527,19 @@ async function syncComboFolder(
   }
 
   if (existing) {
+    const driveCash = both.cash_price ?? undefined;
+    const kept = await crmOwnedPrice(supa, existing.id, driveCash, mdModifiedTime);
+    if (kept != null && driveCash != null) {
+      row.cash_price = kept;
+      row.asking_price = kept;
+      row.description = swapPrice(row.description, driveCash, kept, both.finance_price);
+      row.variants = variants.map((v) =>
+        v.key === both.key
+          ? { ...v, cash_price: kept, description: swapPrice(v.description, driveCash, kept, v.finance_price) ?? null }
+          : v,
+      );
+      report.price_kept_from_crm.push({ folder: folderName, drive_price: driveCash, crm_price: kept });
+    }
     await supa.from('inventory').update(row).eq('id', existing.id);
     report.updated++;
   } else {
@@ -648,6 +735,7 @@ type SyncVariant = {
 type SyncReport = {
   updated: number;
   unmatched: { folder: string; apn: string | null; slug: string }[];
+  price_kept_from_crm: { folder: string; drive_price: number; crm_price: number }[];
 };
 
 function buildAvailableTerms(p: ParsedProperty): string | undefined {
