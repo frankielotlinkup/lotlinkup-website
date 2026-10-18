@@ -164,6 +164,24 @@ async function keepCrmSold(
   report.kept_sold_in_crm.push({ folder: folderName, drive_state: stateName });
 }
 
+// ---------- stable listed date ----------
+// date_listed drives "Newest listings" on the homepage. Stamp it only when a
+// lot goes live; a lot that's already published keeps its original date, so
+// re-running the sync doesn't reshuffle every listing to "listed just now".
+async function keepListedDate(
+  supa: SupabaseClient,
+  inventoryId: string,
+  row: { published: boolean; date_listed: string },
+) {
+  if (!row.published) return;
+  const { data } = await supa
+    .from('inventory')
+    .select('published, date_listed')
+    .eq('id', inventoryId)
+    .maybeSingle();
+  if (data?.published && data.date_listed) row.date_listed = data.date_listed;
+}
+
 // ---------- CRM-owned price ----------
 // Once a price is changed in the CRM (a price-review drop or an edit), the CRM
 // owns it: a Drive sheet that still carries an older price must not revert the
@@ -393,6 +411,7 @@ async function syncPropertyFolder(
 
   if (existing) {
     await keepCrmSold(supa, existing.id, row, folderName, stateName, report);
+    await keepListedDate(supa, existing.id, row);
     const kept = await crmOwnedPrice(supa, existing.id, parsed.cash_price, mdFile.modifiedTime);
     if (kept != null && parsed.cash_price != null) {
       row.cash_price = kept;
@@ -553,6 +572,7 @@ async function syncComboFolder(
 
   if (existing) {
     await keepCrmSold(supa, existing.id, row, folderName, stateName, report);
+    await keepListedDate(supa, existing.id, row);
     const driveCash = both.cash_price ?? undefined;
     const kept = await crmOwnedPrice(supa, existing.id, driveCash, mdModifiedTime);
     if (kept != null && driveCash != null) {

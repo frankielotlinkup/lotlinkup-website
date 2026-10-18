@@ -28,13 +28,13 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const listings = await getPublishedListings();
   const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || null;
-  const newestThree = listings.slice(0, 3);
+  const newest = listings.slice(0, 6);
 
   return (
     <>
       <Hero />
       <LiveUsMapSection listings={listings} />
-      <FeaturedListings listings={newestThree} />
+      <FeaturedListings listings={newest} />
       <ValueProps />
       <HowItWorksTeaser />
       <HomeFinalCta phone={phone} />
