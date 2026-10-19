@@ -8,8 +8,8 @@
 //       <Property Folder>/
 //         property-info.md
 //         Images/
-//           hero.jpg (or any image; auto-pick if no hero* prefix)
-//           gallery-01.jpg
+//           First.jpg, Second.jpg, … (or 01-, 02-…; shown in that order,
+//           first = hero; a hero* prefix forces the hero)
 //           ...
 //     Sold/
 //     Pending/  (optional)
@@ -162,6 +162,24 @@ async function keepCrmSold(
   row.status = 'sold';
   row.published = false;
   report.kept_sold_in_crm.push({ folder: folderName, drive_state: stateName });
+}
+
+// ---------- stable listed date ----------
+// date_listed drives "Newest listings" on the homepage. Stamp it only when a
+// lot goes live; a lot that's already published keeps its original date, so
+// re-running the sync doesn't reshuffle every listing to "listed just now".
+async function keepListedDate(
+  supa: SupabaseClient,
+  inventoryId: string,
+  row: { published: boolean; date_listed: string },
+) {
+  if (!row.published) return;
+  const { data } = await supa
+    .from('inventory')
+    .select('published, date_listed')
+    .eq('id', inventoryId)
+    .maybeSingle();
+  if (data?.published && data.date_listed) row.date_listed = data.date_listed;
 }
 
 // ---------- CRM-owned price ----------
@@ -320,10 +338,9 @@ async function syncPropertyFolder(
     const url = await mirrorImage(drive, supa, img, slug);
     if (url) mirrored.push({ name: img.name!, url });
   }
-  const heroUrl = pickHero(mirrored);
-  const galleryUrls = mirrored
-    .filter((m) => m.url !== heroUrl)
-    .map((m) => m.url);
+  const ordered = orderImages(mirrored);
+  const heroUrl = ordered[0]?.url;
+  const galleryUrls = ordered.slice(1).map((m) => m.url);
 
   // 4. Geocode the maps link, if present
   const coords = parsed.google_maps_url
@@ -394,6 +411,7 @@ async function syncPropertyFolder(
 
   if (existing) {
     await keepCrmSold(supa, existing.id, row, folderName, stateName, report);
+    await keepListedDate(supa, existing.id, row);
     const kept = await crmOwnedPrice(supa, existing.id, parsed.cash_price, mdFile.modifiedTime);
     if (kept != null && parsed.cash_price != null) {
       row.cash_price = kept;
@@ -445,10 +463,9 @@ async function syncComboFolder(
       const url = await mirrorImage(drive, supa, img, slug, cls.key);
       if (url) mirrored.push({ name: img.name!, url });
     }
-    const heroUrl = pickHero(mirrored);
-    const gallery = mirrored
-      .filter((m) => m.url !== heroUrl)
-      .map((m) => m.url);
+    const ordered = orderImages(mirrored);
+    const heroUrl = ordered[0]?.url;
+    const gallery = ordered.slice(1).map((m) => m.url);
 
     variants.push({
       key: cls.key,
@@ -555,6 +572,7 @@ async function syncComboFolder(
 
   if (existing) {
     await keepCrmSold(supa, existing.id, row, folderName, stateName, report);
+    await keepListedDate(supa, existing.id, row);
     const driveCash = both.cash_price ?? undefined;
     const kept = await crmOwnedPrice(supa, existing.id, driveCash, mdModifiedTime);
     if (kept != null && driveCash != null) {
@@ -777,20 +795,89 @@ function buildAvailableTerms(p: ParsedProperty): string | undefined {
   return parts.join(' · ');
 }
 
-// ---------- hero picker ----------
-function pickHero(images: { name: string; url: string }[]): string | undefined {
-  if (images.length === 0) return undefined;
-  const score = (n: string) => {
+// ---------- image order ----------
+// Andrew names photos in the order he wants them shown: "First", "Second",
+// "Third"… (sometimes misspelled, e.g. "Fith", "Eitght"), or "1", "02-…".
+// The first image becomes the hero and the rest fill the gallery in that
+// order. A "hero"/"00-hero" prefix still forces the hero. Unnumbered names
+// fall back to the old picker: aerial/drone, then wide/frontage/road, then
+// alphabetical.
+const ORDER_WORDS: [number, string[]][] = [
+  [1, ['first', 'one']],
+  [2, ['second', 'two']],
+  [3, ['third', 'three']],
+  [4, ['fourth', 'four', 'forth']],
+  [5, ['fifth', 'five']],
+  [6, ['sixth', 'six']],
+  [7, ['seventh', 'seven']],
+  [8, ['eighth', 'eight']],
+  [9, ['ninth', 'nine', 'nineth']],
+  [10, ['tenth', 'ten']],
+  [11, ['eleventh', 'eleven']],
+  [12, ['twelfth', 'twelve']],
+  [13, ['thirteenth', 'thirteen']],
+  [14, ['fourteenth', 'fourteen']],
+  [15, ['fifteenth', 'fifteen']],
+  [16, ['sixteenth', 'sixteen']],
+  [17, ['seventeenth', 'seventeen']],
+  [18, ['eighteenth', 'eighteen']],
+  [19, ['nineteenth', 'nineteen']],
+  [20, ['twentieth', 'twenty']],
+];
+
+function editDistance(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+  return d[a.length][b.length];
+}
+
+// Position encoded in a filename, or null if it doesn't start with one.
+function imagePosition(name: string): number | null {
+  const base = name.toLowerCase().replace(/\.[a-z0-9]+$/, '');
+  const digits = base.match(/^(\d{1,3})(?![a-z0-9])/);
+  if (digits) return parseInt(digits[1], 10);
+  const word = base.match(/^[a-z]+/)?.[0];
+  if (!word) return null;
+  let best: { n: number; dist: number } | null = null;
+  for (const [n, words] of ORDER_WORDS) {
+    for (const w of words) {
+      const dist = editDistance(word, w);
+      // Allow small typos, but keep short words strict ("ten" ≠ "two").
+      if (dist > (w.length >= 5 ? 2 : w.length >= 4 ? 1 : 0)) continue;
+      if (!best || dist < best.dist) best = { n, dist };
+    }
+  }
+  return best?.n ?? null;
+}
+
+function orderImages<T extends { name: string }>(images: T[]): T[] {
+  const key = (n: string) => {
     const lower = n.toLowerCase();
-    if (/^(00-)?hero/.test(lower)) return 100;
-    if (/aerial|drone/.test(lower)) return 50;
-    if (/wide|frontage|road/.test(lower)) return 30;
-    return 0;
+    if (/^(00-)?hero/.test(lower)) return { tier: 0, pos: 0, score: 0 };
+    const pos = imagePosition(n);
+    if (pos != null) return { tier: 1, pos, score: 0 };
+    let score = 0;
+    if (/aerial|drone/.test(lower)) score = 50;
+    else if (/wide|frontage|road/.test(lower)) score = 30;
+    return { tier: 2, pos: 0, score };
   };
-  const sorted = [...images].sort(
-    (a, b) => score(b.name) - score(a.name) || a.name.localeCompare(b.name)
-  );
-  return sorted[0].url;
+  return [...images].sort((a, b) => {
+    const ka = key(a.name);
+    const kb = key(b.name);
+    return (
+      ka.tier - kb.tier ||
+      ka.pos - kb.pos ||
+      kb.score - ka.score ||
+      a.name.localeCompare(b.name)
+    );
+  });
 }
 
 // ---------- Drive helpers ----------
